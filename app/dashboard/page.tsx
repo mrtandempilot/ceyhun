@@ -62,7 +62,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white">CRM Dashboard</h1>
-          <p className="mt-2 text-gray-400">Welcome back! Here's your business overview.</p>
+          <p className="mt-2 text-gray-400">Welcome back! Here&apos;s your business overview.</p>
         </div>
 
         {/* Key Metrics Grid */}
