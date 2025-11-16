@@ -210,8 +210,8 @@ async function processEmailForwarding(supabase: any, email: any) {
 
         // Priority threshold
         if (conditions.min_priority) {
-          const priorityLevels = { low: 1, normal: 2, high: 3, urgent: 4 };
-          if (priorityLevels[email.priority] < priorityLevels[conditions.min_priority]) continue;
+          const priorityLevels: { [key: string]: number } = { low: 1, normal: 2, high: 3, urgent: 4 };
+          if (priorityLevels[email.priority as string] < priorityLevels[conditions.min_priority]) continue;
         }
       }
 
