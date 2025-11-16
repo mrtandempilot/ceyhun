@@ -18,6 +18,7 @@ export interface Booking {
   hotel_name?: string;
   created_at: string;
   updated_at?: string;
+  ticket_id?: string; // Add ticket_id to the Booking interface
   
   // Computed fields for compatibility
   user_name?: string;

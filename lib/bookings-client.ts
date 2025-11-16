@@ -80,3 +80,24 @@ export async function cancelBooking(id: string): Promise<void> {
     throw new Error(error.message || 'Failed to cancel booking');
   }
 }
+
+// Delete booking via API
+export async function deleteBooking(id: string): Promise<void> {
+  try {
+    const token = await getAuthToken();
+    
+    const response = await fetch(`/api/bookings/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete booking');
+    }
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to delete booking');
+  }
+}

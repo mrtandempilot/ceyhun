@@ -289,7 +289,6 @@ export async function getPendingReviews() {
   const { data, error } = await supabase
     .from('reviews')
     .select('*')
-    .eq('status', 'pending')
     .order('created_at', { ascending: false });
   
   if (error) throw error;
@@ -313,7 +312,6 @@ export async function updateReview(id: string, updates: Partial<Review>) {
 // ============================================
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  // Get date ranges
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekAgo = new Date(today);
@@ -323,137 +321,106 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const lastMonth = new Date(today);
   lastMonth.setMonth(lastMonth.getMonth() - 2);
 
-  // Get total customers
-  const { count: totalCustomers } = await supabase
-    .from('customers')
-    .select('*', { count: 'exact', head: true });
+  const [
+    { data: allCustomers, error: customersError },
+    { data: allBookings, error: bookingsError },
+    { data: allPilots, error: pilotsError },
+    { data: allReviews, error: reviewsError },
+  ] = await Promise.all([
+    supabase.from('customers').select('id, status, vip_status, created_at'),
+    supabase.from('bookings').select('total_amount, booking_date, status, created_at'),
+    supabase.from('pilots').select('id, status, total_flights'),
+    supabase.from('reviews').select('id, rating'),
+  ]);
 
-  // Get active customers
-  const { count: activeCustomers } = await supabase
-    .from('customers')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'active');
-
-  // Get VIP customers
-  const { count: vipCustomers } = await supabase
-    .from('customers')
-    .select('*', { count: 'exact', head: true })
-    .eq('vip_status', true);
-
-  // Get total bookings
-  const { count: totalBookings } = await supabase
-    .from('bookings')
-    .select('*', { count: 'exact', head: true });
-
-  // Get bookings data for revenue
-  const { data: allBookings } = await supabase
-    .from('bookings')
-    .select('total_amount, booking_date, status, created_at');
+  if (customersError) throw customersError;
+  if (bookingsError) throw bookingsError;
+  if (pilotsError) throw pilotsError;
+  if (reviewsError) throw reviewsError;
 
   const completedBookings = allBookings?.filter((b: any) => b.status === 'completed') || [];
   const totalRevenue = completedBookings.reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0);
   const averageBookingValue = completedBookings.length > 0 ? totalRevenue / completedBookings.length : 0;
 
-  // Today's stats
-  const todayBookings = allBookings?.filter((b: any) => 
-    new Date(b.booking_date) >= today
-  ).length || 0;
-  const todayRevenue = allBookings?.filter((b: any) => 
-    new Date(b.booking_date) >= today && b.status === 'completed'
-  ).reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0) || 0;
+  const filterByDate = (items: any[], dateKey: string, startDate: Date, endDate?: Date) => {
+    return items.filter((item: any) => {
+      const itemDate = new Date(item[dateKey]);
+      return itemDate >= startDate && (!endDate || itemDate < endDate);
+    });
+  };
 
-  // Week stats
-  const weekBookings = allBookings?.filter((b: any) => 
-    new Date(b.booking_date) >= weekAgo
-  ).length || 0;
-  const weekRevenue = allBookings?.filter((b: any) => 
-    new Date(b.booking_date) >= weekAgo && b.status === 'completed'
-  ).reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0) || 0;
+  const todayBookingsData = filterByDate(allBookings || [], 'booking_date', today);
+  const todayBookings = todayBookingsData.length;
+  const todayRevenue = filterByDate(completedBookings, 'booking_date', today)
+    .reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0);
 
-  // Month stats
-  const monthBookings = allBookings?.filter((b: any) => 
-    new Date(b.booking_date) >= monthAgo
-  ).length || 0;
-  const monthRevenue = allBookings?.filter((b: any) => 
-    new Date(b.booking_date) >= monthAgo && b.status === 'completed'
-  ).reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0) || 0;
+  const weekBookingsData = filterByDate(allBookings || [], 'booking_date', weekAgo);
+  const weekBookings = weekBookingsData.length;
+  const weekRevenue = filterByDate(completedBookings, 'booking_date', weekAgo)
+    .reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0);
 
-  // Last month stats for growth calculation
-  const lastMonthBookings = allBookings?.filter((b: any) => {
-    const date = new Date(b.booking_date);
-    return date >= lastMonth && date < monthAgo;
-  }).length || 0;
+  const monthBookingsData = filterByDate(allBookings || [], 'booking_date', monthAgo);
+  const monthBookings = monthBookingsData.length;
+  const monthRevenue = filterByDate(completedBookings, 'booking_date', monthAgo)
+    .reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0);
 
-  const lastMonthRevenue = allBookings?.filter((b: any) => {
-    const date = new Date(b.booking_date);
-    return date >= lastMonth && date < monthAgo && b.status === 'completed';
-  }).reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0) || 0;
+  const lastMonthBookingsData = filterByDate(allBookings || [], 'booking_date', lastMonth, monthAgo);
+  const lastMonthBookings = lastMonthBookingsData.length;
+  const lastMonthRevenue = filterByDate(completedBookings, 'booking_date', lastMonth, monthAgo)
+    .reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0);
 
-  // Get pilots
-  const { count: activePilots } = await supabase
-    .from('pilots')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'active');
+  const totalCustomers = allCustomers?.length || 0;
+  const activeCustomers = allCustomers?.filter((c: any) => c.status === 'active').length || 0;
+  const vipCustomers = allCustomers?.filter((c: any) => c.vip_status === true).length || 0;
 
-  const { data: pilotsData } = await supabase
-    .from('pilots')
-    .select('total_flights');
-  
-  const totalFlights = pilotsData?.reduce((sum: number, p: any) => sum + (p.total_flights || 0), 0) || 0;
+  const newCustomersMonth = filterByDate(allCustomers || [], 'created_at', monthAgo).length;
+  const newCustomersLastMonth = filterByDate(allCustomers || [], 'created_at', lastMonth, monthAgo).length;
 
-  // Reviews functionality not implemented yet - using default values
+  const activePilots = allPilots?.filter((p: any) => p.status === 'active').length || 0;
+  const totalFlights = allPilots?.reduce((sum: number, p: any) => sum + (p.total_flights || 0), 0) || 0;
+
+  // Reviews table doesn't have a status column, so pendingReviews will be 0
   const pendingReviews = 0;
-  const averageRating = 0;
+  const totalRatings = allReviews?.filter((r: any) => r.rating).reduce((sum: number, r: any) => sum + r.rating, 0) || 0;
+  const ratedReviewsCount = allReviews?.filter((r: any) => r.rating).length || 0;
+  const averageRating = ratedReviewsCount > 0 ? totalRatings / ratedReviewsCount : 0;
 
-  // Calculate growth percentages
-  const revenueGrowth = lastMonthRevenue > 0 
-    ? ((monthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+  const revenueGrowth = lastMonthRevenue > 0
+    ? ((monthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
     : monthRevenue > 0 ? 100 : 0;
 
   const bookingGrowth = lastMonthBookings > 0
     ? ((monthBookings - lastMonthBookings) / lastMonthBookings) * 100
     : monthBookings > 0 ? 100 : 0;
 
-  // Customer growth
-  const { data: newCustomers } = await supabase
-    .from('customers')
-    .select('created_at')
-    .gte('created_at', monthAgo.toISOString());
-
-  const { data: lastMonthCustomers } = await supabase
-    .from('customers')
-    .select('created_at')
-    .gte('created_at', lastMonth.toISOString())
-    .lt('created_at', monthAgo.toISOString());
-
-  const customerGrowth = (lastMonthCustomers?.length || 0) > 0
-    ? (((newCustomers?.length || 0) - (lastMonthCustomers?.length || 0)) / (lastMonthCustomers?.length || 0)) * 100
-    : (newCustomers?.length || 0) > 0 ? 100 : 0;
+  const customerGrowth = newCustomersLastMonth > 0
+    ? ((newCustomersMonth - newCustomersLastMonth) / newCustomersLastMonth) * 100
+    : newCustomersMonth > 0 ? 100 : 0;
 
   return {
-    totalCustomers: totalCustomers || 0,
-    totalBookings: totalBookings || 0,
+    totalCustomers,
+    totalBookings: allBookings?.length || 0,
     totalRevenue,
     averageBookingValue,
-    
+
     todayBookings,
     todayRevenue,
-    
+
     weekBookings,
     weekRevenue,
-    
+
     monthBookings,
     monthRevenue,
-    
-    activeCustomers: activeCustomers || 0,
-    vipCustomers: vipCustomers || 0,
-    
-    activePilots: activePilots || 0,
+
+    activeCustomers,
+    vipCustomers,
+
+    activePilots,
     totalFlights,
-    
-    pendingReviews: pendingReviews || 0,
+
+    pendingReviews,
     averageRating,
-    
+
     revenueGrowth,
     bookingGrowth,
     customerGrowth,

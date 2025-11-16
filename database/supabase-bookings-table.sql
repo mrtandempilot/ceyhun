@@ -12,7 +12,8 @@ ADD COLUMN IF NOT EXISTS google_calendar_event_id TEXT,
 ADD COLUMN IF NOT EXISTS notes TEXT,
 ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
 ADD COLUMN IF NOT EXISTS price DECIMAL(10,2),
-ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+ADD COLUMN IF NOT EXISTS ticket_id TEXT UNIQUE;
 
 -- Update user_name from customer_name if empty
 UPDATE public.bookings 
@@ -38,6 +39,7 @@ WHERE participants < 1;
 CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON public.bookings(user_id);
 CREATE INDEX IF NOT EXISTS idx_bookings_booking_date ON public.bookings(booking_date);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON public.bookings(status);
+CREATE INDEX IF NOT EXISTS idx_bookings_ticket_id ON public.bookings(ticket_id);
 
 -- Enable Row Level Security if not already enabled
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;

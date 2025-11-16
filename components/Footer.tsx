@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 export default function Footer() {
@@ -9,9 +11,7 @@ export default function Footer() {
           <div>
             <h3 className="text-xl font-bold mb-4">Oludeniz Tours</h3>
             <p className="text-gray-300">
-              Experience the thrill of paragliding over the stunning Blue Lagoon
-              of Oludeniz. We offer unforgettable adventure tours in one of
-              Turkey&apos;s most beautiful destinations.
+              Experience the thrill of paragliding and adventure tours in the beautiful Oludeniz. We offer unforgettable experiences with professional guides and top-quality equipment.
             </p>
           </div>
 
@@ -31,7 +31,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/about" className="text-gray-300 hover:text-white transition">
-                  About Us
+                  About
                 </Link>
               </li>
               <li>
@@ -44,12 +44,12 @@ export default function Footer() {
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Contact Us</h3>
+            <h3 className="text-xl font-bold mb-4">Contact Info</h3>
             <ul className="space-y-2 text-gray-300">
               <li>📍 Oludeniz, Fethiye, Turkey</li>
               <li>📞 +90 XXX XXX XX XX</li>
               <li>✉️ info@olubeniztours.com</li>
-              <li>⏰ Open Daily: 8:00 AM - 8:00 PM</li>
+              <li>⏰ Open 24/7</li>
             </ul>
           </div>
         </div>

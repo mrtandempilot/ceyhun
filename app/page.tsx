@@ -59,23 +59,29 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[600px] bg-gradient-to-r from-blue-500 to-blue-700 text-white">
-        <div className="absolute inset-0 bg-black opacity-20"></div>
+      <section className="relative h-[600px] bg-gradient-to-r from-blue-500 to-blue-700 text-white overflow-hidden">
+        <Image 
+          src="/images/mali.jpg"
+          alt="Beautiful turquoise bay with sailboat"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-black opacity-30"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
           <div className="max-w-3xl">
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              Soar Above Oludeniz
+              Discover Paradise in Oludeniz
             </h1>
             <p className="text-xl md:text-2xl mb-8">
-              Experience the breathtaking beauty of the Blue Lagoon from the sky.
-              Book your paragliding adventure today!
+              Experience unforgettable paragliding and adventure tours
             </p>
             <div className="flex gap-4">
               <Link
                 href="/tours"
                 className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
               >
-                View Tours
+                View All Tours
               </Link>
               <Link
                 href="/contact"
@@ -92,12 +98,12 @@ export default function Home() {
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold text-center mb-12">
-            Our Popular Tours
+            Featured Tours
           </h2>
 
           {loading ? (
             <div className="text-center py-12">
-              <p className="text-xl text-gray-600">Loading tours...</p>
+              <p className="text-xl text-gray-600">Loading...</p>
             </div>
           ) : featuredTours.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -168,24 +174,21 @@ export default function Home() {
               <div className="text-5xl mb-4">🏆</div>
               <h3 className="text-xl font-bold mb-2">Experienced Guides</h3>
               <p className="text-gray-600">
-                Our professional team has years of experience ensuring your
-                safety and enjoyment.
+                Our professional team has years of experience ensuring your safety and enjoyment.
               </p>
             </div>
             <div className="text-center">
               <div className="text-5xl mb-4">⭐</div>
               <h3 className="text-xl font-bold mb-2">5-Star Reviews</h3>
               <p className="text-gray-600">
-                Rated excellent by thousands of satisfied customers from around
-                the world.
+                Rated excellent by thousands of satisfied customers from around the world.
               </p>
             </div>
             <div className="text-center">
               <div className="text-5xl mb-4">💰</div>
               <h3 className="text-xl font-bold mb-2">Best Prices</h3>
               <p className="text-gray-600">
-                Competitive rates with no hidden fees. Get the best value for
-                your adventure.
+                Competitive rates with no hidden fees. Get the best value for your adventure.
               </p>
             </div>
           </div>

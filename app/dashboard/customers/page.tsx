@@ -384,7 +384,7 @@ export default function CustomersPage() {
                             {booking.adults} adults{booking.children > 0 ? `, ${booking.children} children` : ''}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${booking.total_amount.toFixed(2)}
+                            ${booking.total_amount?.toFixed(2) || '0.00'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <select

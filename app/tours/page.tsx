@@ -59,7 +59,7 @@ export default function ToursPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-5xl font-bold mb-4">Our Tours</h1>
             <p className="text-xl max-w-3xl mx-auto">
-              Loading tours...
+              Loading...
             </p>
           </div>
         </section>
@@ -89,9 +89,7 @@ export default function ToursPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl font-bold mb-4">Our Tours</h1>
           <p className="text-xl max-w-3xl mx-auto">
-            Choose from our wide selection of exciting tours and activities in
-            beautiful Oludeniz. Each adventure is designed to create
-            unforgettable memories.
+            Choose from our exciting selection of tours and activities
           </p>
         </div>
       </section>
@@ -111,6 +109,7 @@ export default function ToursPage() {
                       src={tour.image_url}
                       alt={tour.name}
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover"
                     />
                   </div>
@@ -186,8 +185,7 @@ export default function ToursPage() {
             Ready for Your Adventure?
           </h2>
           <p className="text-xl mb-8">
-            Contact us today to book your tour or if you have any questions.
-            Our friendly team is here to help!
+            Contact us today to book your tour or if you have any questions. Our friendly team is here to help!
           </p>
           <Link
             href="/contact"

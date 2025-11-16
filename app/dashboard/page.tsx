@@ -15,28 +15,38 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadData() {
       try {
+        console.log('🔍 Starting dashboard data load...');
         const user = await getCurrentUser();
+        console.log('🔍 User:', user?.email);
         
         if (!user) {
+          console.log('🔍 No user found, redirecting to login');
           router.push('/login');
           return;
         }
 
         // Check if user is admin
         if (user.email !== 'mrtandempilot@gmail.com' && user.email !== 'faralyaworks@gmail.com') {
+          console.log('🔍 User is not admin, redirecting to home');
           router.push('/');
           return;
         }
 
+        console.log('🔍 Fetching dashboard stats and pipeline...');
         const [dashboardStats, bookingPipeline] = await Promise.all([
           getDashboardStats(),
           getBookingPipeline()
         ]);
 
+        console.log('🔍 Dashboard stats:', dashboardStats);
+        console.log('🔍 Booking pipeline:', bookingPipeline);
+
         setStats(dashboardStats);
         setPipeline(bookingPipeline);
+        console.log('🔍 Dashboard data loaded successfully!');
       } catch (error) {
-        console.error('Error loading dashboard:', error);
+        console.error('❌ Error loading dashboard:', error);
+        alert('Error loading dashboard: ' + (error as Error).message + '\n\nCheck console for details.');
       } finally {
         setLoading(false);
       }

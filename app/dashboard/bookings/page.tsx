@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import TicketModal from '@/components/TicketModal'; // Import TicketModal
 
 interface Booking {
   id: number;
@@ -21,6 +22,7 @@ interface Booking {
   created_at: string;
   hotel_name?: string;
   notes?: string;
+  ticket_id?: string; // Added ticket_id
 }
 
 interface Invoice {
@@ -48,6 +50,8 @@ export default function AdminBookingsPage() {
   const [customersData, setCustomersData] = useState<Map<string, Customer>>(new Map());
   const [invoices, setInvoices] = useState<Map<string, Invoice>>(new Map());
   const [creatingInvoice, setCreatingInvoice] = useState<number | null>(null);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false); // State for modal visibility
+  const [currentTicketData, setCurrentTicketData] = useState<any>(null); // State for ticket data
 
   useEffect(() => {
     checkAuthAndLoadBookings();
@@ -82,7 +86,7 @@ export default function AdminBookingsPage() {
     try {
       const { data, error } = await supabase
         .from('bookings')
-        .select('*')
+        .select('*, ticket_id') // Select ticket_id
         .order('created_at', { ascending: false});
 
       if (error) throw error;
@@ -133,25 +137,61 @@ export default function AdminBookingsPage() {
 
   const updateBookingStatus = async (bookingId: number, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: newStatus })
-        .eq('id', bookingId);
+      // Use the API endpoint instead of direct Supabase update
+      // This ensures Google Calendar sync happens automatically
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update status');
+      }
 
       // Reload bookings to reflect the change
       await loadBookings();
       
-      // Show success message if invoice was auto-created
+      // Show success message
       if (newStatus === 'completed') {
         setTimeout(() => {
           alert('✅ Booking completed! Invoice will be auto-created.');
         }, 500);
+      } else {
+        // Show brief success notification for other status changes
+        console.log(`✅ Booking status updated to: ${newStatus} (Calendar synced)`);
       }
     } catch (error) {
       console.error('Error updating booking status:', error);
       alert('Failed to update booking status');
+    }
+  };
+
+  const generateTicket = async (booking: Booking) => {
+    try {
+      const response = await fetch('/api/tickets/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ booking_id: booking.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate ticket');
+      }
+
+      const ticket = await response.json();
+      setCurrentTicketData(ticket);
+      setIsTicketModalOpen(true);
+      await loadBookings(); // Reload bookings to show new ticket_id if generated
+    } catch (error) {
+      console.error('Error generating ticket:', error);
+      alert('Failed to generate ticket.');
     }
   };
 
@@ -331,7 +371,7 @@ export default function AdminBookingsPage() {
                     Total
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    Status
+                    Ticket
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                     Created
@@ -347,7 +387,7 @@ export default function AdminBookingsPage() {
               <tbody className="divide-y divide-gray-700">
                 {filteredBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
+                    <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
                       No bookings found
                     </td>
                   </tr>
@@ -398,9 +438,24 @@ export default function AdminBookingsPage() {
                             <div className="text-sm font-semibold text-white">${booking.total_amount}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                              {booking.status}
-                            </span>
+                            {booking.ticket_id ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-white">{booking.ticket_id}</span>
+                                <button
+                                  onClick={() => generateTicket(booking)}
+                                  className="text-blue-400 hover:text-blue-300 text-xs"
+                                >
+                                  View
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => generateTicket(booking)}
+                                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500 transition"
+                              >
+                                Generate Ticket
+                              </button>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                             {new Date(booking.created_at).toLocaleDateString()}
@@ -443,7 +498,7 @@ export default function AdminBookingsPage() {
                         </tr>
                         {isExpanded && customerData && (
                           <tr className="bg-gray-750">
-                            <td colSpan={8} className="px-6 py-4">
+                            <td colSpan={9} className="px-6 py-4">
                               <div className="bg-gray-900 rounded-lg p-4">
                                 <h4 className="text-white font-semibold mb-3">Customer Details</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -484,6 +539,13 @@ export default function AdminBookingsPage() {
             </table>
           </div>
         </div>
+      {/* End Bookings Table */}
+
+      <TicketModal
+        isOpen={isTicketModalOpen}
+        onClose={() => setIsTicketModalOpen(false)}
+        ticketData={currentTicketData}
+      />
       </div>
     </div>
   );

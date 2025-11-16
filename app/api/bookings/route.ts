@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createCalendarEvent } from '@/lib/google-calendar';
+import { generateUniqueTicketId } from '@/lib/utils'; // Import the new utility
 import { CreateBookingInput } from '@/types/booking';
 
 export async function POST(request: NextRequest) {
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create booking in Supabase
+    const ticketId = generateUniqueTicketId(); // Generate unique ticket ID
     const bookingData = {
       user_id: user.id,
       customer_email: user.email || '',
@@ -104,6 +106,7 @@ export async function POST(request: NextRequest) {
       channel: 'website',
       status: 'pending',
       created_at: new Date().toISOString(),
+      ticket_id: ticketId, // Add ticket ID to booking data
     };
 
     const { data, error } = await supabase
@@ -222,7 +225,7 @@ export async function GET(request: NextRequest) {
       // Use admin client to bypass RLS
       const { data, error } = await supabaseAdmin
         .from('bookings')
-        .select('*')
+        .select('id, user_id, customer_name, customer_email, customer_phone, tour_name, booking_date, tour_start_time, adults, children, duration, channel, status, total_amount, google_calendar_event_id, notes, hotel_name, created_at, updated_at, ticket_id')
         .eq('customer_email', customerEmail)
         .order('booking_date', { ascending: false });
 
@@ -249,7 +252,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('bookings')
-      .select('*')
+      .select('id, user_id, customer_name, customer_email, customer_phone, tour_name, booking_date, tour_start_time, adults, children, duration, channel, status, total_amount, google_calendar_event_id, notes, hotel_name, created_at, updated_at, ticket_id')
       .eq('user_id', user.id)
       .order('booking_date', { ascending: false });
 

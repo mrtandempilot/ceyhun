@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getUserBookings, cancelBooking } from '@/lib/bookings-client';
+import { getUserBookings, cancelBooking, deleteBooking } from '@/lib/bookings-client';
 import { Booking } from '@/types/booking';
 
 export default function BookingsList() {
@@ -35,6 +35,19 @@ export default function BookingsList() {
       await loadBookings();
     } catch (err: any) {
       alert(err.message || 'Failed to cancel booking');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to permanently delete this booking? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteBooking(id);
+      await loadBookings();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete booking');
     }
   };
 
@@ -127,10 +140,20 @@ export default function BookingsList() {
                   <p className="text-sm text-gray-600 mt-1">
                     {formatDate(booking.booking_date)} at {booking.tour_start_time}
                   </p>
+                  {booking.ticket_id && (
+                    <p className="text-xs text-gray-500 mt-1">Ticket ID: <span className="font-mono font-semibold text-gray-700">{booking.ticket_id}</span></p>
+                  )}
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(booking.status)}`}>
-                  {booking.status.toUpperCase()}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(booking.status)}`}>
+                    {booking.status.toUpperCase()}
+                  </span>
+                  {booking.ticket_id && (
+                    <div className="mt-2 p-1 bg-white border border-gray-200 rounded-md text-center text-xs font-mono text-gray-700">
+                      {booking.ticket_id}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-4">
@@ -194,6 +217,12 @@ export default function BookingsList() {
                   Cancel Booking
                 </button>
               )}
+              <button
+                onClick={() => handleDelete(booking.id)}
+                className="w-full mt-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-300"
+              >
+                Delete Booking
+              </button>
             </div>
           );
         })}

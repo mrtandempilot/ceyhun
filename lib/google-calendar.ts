@@ -53,8 +53,15 @@ export async function createCalendarEvent(booking: Booking): Promise<string | nu
     const endDate = new Date(startDate.getTime() + (booking.duration || 120) * 60000);
 
     const participants = booking.adults + (booking.children || 0);
+    
+    // Add status indicator to summary
+    const statusLabel = booking.status.toUpperCase();
+    const statusEmoji = booking.status === 'confirmed' ? '✅' : 
+                       booking.status === 'pending' ? '⏳' : 
+                       booking.status === 'completed' ? '✔️' : '❌';
+    
     const event: any = {
-      summary: `${booking.tour_name} - ${booking.customer_name}`,
+      summary: `${statusEmoji} [${statusLabel}] ${booking.tour_name} - ${booking.customer_name}`,
       description: `
 Booking Details:
 - Customer: ${booking.customer_name}
@@ -130,8 +137,15 @@ export async function updateCalendarEvent(
     const endDate = new Date(startDate.getTime() + (booking.duration || 120) * 60000);
 
     const participants = booking.adults + (booking.children || 0);
+    
+    // Add status indicator to summary
+    const statusLabel = booking.status.toUpperCase();
+    const statusEmoji = booking.status === 'confirmed' ? '✅' : 
+                       booking.status === 'pending' ? '⏳' : 
+                       booking.status === 'completed' ? '✔️' : '❌';
+    
     const event: any = {
-      summary: `${booking.tour_name} - ${booking.customer_name}`,
+      summary: `${statusEmoji} [${statusLabel}] ${booking.tour_name} - ${booking.customer_name}`,
       description: `
 Booking Details:
 - Customer: ${booking.customer_name}

@@ -1,0 +1,48 @@
+# Vercel Ignore File
+# These files won't be uploaded to Vercel
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build outputs
+.next/
+out/
+build/
+
+# Environment files
+.env
+.env*.local
+
+# Large files
+*.rar
+*.zip
+*.mp4
+*.mov
+*.avi
+*.mkv
+paraglidingwebapp.rar
+paraglidingwebapp/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Git
+.git/
+.gitattributes
