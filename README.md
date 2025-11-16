@@ -131,3 +131,6 @@ Copyright © 2024 Oludeniz Tours. All rights reserved.
 ## Acknowledgments
 
 Built with ❤️ using Next.js and Tailwind CSS
+
+---
+Updated: November 2025 - Now with multilingual support and enhanced features!
