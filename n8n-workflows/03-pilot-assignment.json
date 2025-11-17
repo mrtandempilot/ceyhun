@@ -1,0 +1,276 @@
+{
+  "name": "Smart Pilot Assignment",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/5 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 5 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/bookings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "eq.confirmed"
+            },
+            {
+              "name": "assigned_pilot",
+              "value": "is.null"
+            },
+            {
+              "name": "select",
+              "value": "*"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-unassigned-bookings",
+      "name": "Get Unassigned Bookings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [420, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "check-bookings-exist",
+      "name": "Any Unassigned?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {},
+      "id": "split-bookings",
+      "name": "Split Into Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [860, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/pilots",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "eq.active"
+            },
+            {
+              "name": "select",
+              "value": "id,name,email,phone,rating,total_flights,languages,specialties"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-available-pilots",
+      "name": "Get Available Pilots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1080, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get booking details\nconst booking = $input.first().json;\nconst pilots = $('Get Available Pilots').first().json;\n\n// Get booking date and count existing assignments for that day\nconst bookingDate = booking.booking_date;\n\n// Score pilots based on multiple factors\nconst scoredPilots = pilots.map(pilot => {\n  let score = 0;\n  \n  // Factor 1: Rating (0-50 points)\n  score += (pilot.rating || 4.0) * 10;\n  \n  // Factor 2: Experience (0-30 points)\n  const experienceScore = Math.min((pilot.total_flights || 0) / 10, 30);\n  score += experienceScore;\n  \n  // Factor 3: Language match (0-20 points)\n  const pilotLanguages = pilot.languages || [];\n  const bookingLanguage = booking.customer_language || 'en';\n  if (pilotLanguages.includes(bookingLanguage)) {\n    score += 20;\n  }\n  \n  // Factor 4: Specialty match (0-10 points)\n  const tourType = booking.tour_name?.toLowerCase() || '';\n  const specialties = pilot.specialties || [];\n  if (tourType.includes('tandem') && specialties.includes('tandem')) score += 10;\n  if (tourType.includes('acro') && specialties.includes('acrobatic')) score += 10;\n  \n  // TODO: Add workload balancing - check how many flights this pilot has today\n  // This would require another query to bookings table\n  \n  return {\n    ...pilot,\n    score: score,\n    bookingId: booking.id\n  };\n});\n\n// Sort by score (highest first)\nscored Pilots.sort((a, b) => b.score - a.score);\n\n// Return best pilot\nreturn [{ json: scoredPilots[0] }];"
+      },
+      "id": "select-best-pilot",
+      "name": "AI Pilot Selection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/bookings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "PATCH",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "eq.{{ $json.bookingId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"assigned_pilot\": \"{{ $json.id }}\",\n  \"pilot_name\": \"{{ $json.name }}\",\n  \"pilot_phone\": \"{{ $json.phone }}\",\n  \"assignment_date\": \"{{ $now() }}\"\n}",
+        "options": {}
+      },
+      "id": "assign-pilot",
+      "name": "Assign Pilot to Booking",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1520, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $env.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "textBody": "=🪂 **New Flight Assignment**\n\nHi {{ $json.name }}! ✈️\n\nYou've been assigned a new flight:\n\n**Customer:** {{ $('Split Into Items').item.json.customer_name }}\n**Tour:** {{ $('Split Into Items').item.json.tour_name }}\n**Date:** {{ $('Split Into Items').item.json.booking_date }}\n**Time:** {{ $('Split Into Items').item.json.tour_start_time }}\n**Participants:** {{ $('Split Into Items').item.json.adults }} adults, {{ $('Split Into Items').item.json.children || 0 }} children\n**Pickup:** {{ $('Split Into Items').item.json.hotel_name || 'Office' }}\n\n📱 Customer Phone: {{ $('Split Into Items').item.json.customer_phone }}\n\n✅ Please confirm receipt!\n\nSky high! 🌤️",
+        "additionalFields": {}
+      },
+      "id": "notify-pilot-whatsapp",
+      "name": "Notify Pilot (WhatsApp)",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [1740, 100],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-credentials",
+          "name": "WhatsApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $env.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $('Split Into Items').item.json.customer_phone }}",
+        "textBody": "=👨‍✈️ **Pilot Assigned!**\n\nGood news {{ $('Split Into Items').item.json.customer_name }}!\n\nYour pilot has been assigned:\n\n**Pilot:** {{ $json.name }}\n**Experience:** {{ $json.total_flights }}+ flights\n**Rating:** ⭐ {{ $json.rating }}/5.0\n\nYour flight details:\n📅 {{ $('Split Into Items').item.json.booking_date }}\n⏰ {{ $('Split Into Items').item.json.tour_start_time }}\n🪂 {{ $('Split Into Items').item.json.tour_name }}\n\nEverything is ready! See you soon! 🌟",
+        "additionalFields": {}
+      },
+      "id": "notify-customer",
+      "name": "Notify Customer",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [1740, 300],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-credentials",
+          "name": "WhatsApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "=👨‍✈️ **PILOT ASSIGNED**\n\n**Booking:** #{{ $('Split Into Items').item.json.id }}\n**Customer:** {{ $('Split Into Items').item.json.customer_name }}\n**Tour:** {{ $('Split Into Items').item.json.tour_name }}\n**Date:** {{ $('Split Into Items').item.json.booking_date }}\n**Time:** {{ $('Split Into Items').item.json.tour_start_time }}\n\n**Assigned Pilot:**\n👤 {{ $json.name }}\n📱 {{ $json.phone }}\n⭐ Rating: {{ $json.rating }}/5.0\n✈️ {{ $json.total_flights }}+ flights\n\n✅ Both pilot and customer notified",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "notify-telegram",
+      "name": "Notify Staff (Telegram)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1960, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-credentials",
+          "name": "Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 5 Minutes": {
+      "main": [[{ "node": "Get Unassigned Bookings", "type": "main", "index": 0 }]]
+    },
+    "Get Unassigned Bookings": {
+      "main": [[{ "node": "Any Unassigned?", "type": "main", "index": 0 }]]
+    },
+    "Any Unassigned?": {
+      "main": [[{ "node": "Split Into Items", "type": "main", "index": 0 }]]
+    },
+    "Split Into Items": {
+      "main": [[{ "node": "Get Available Pilots", "type": "main", "index": 0 }]]
+    },
+    "Get Available Pilots": {
+      "main": [[{ "node": "AI Pilot Selection", "type": "main", "index": 0 }]]
+    },
+    "AI Pilot Selection": {
+      "main": [[{ "node": "Assign Pilot to Booking", "type": "main", "index": 0 }]]
+    },
+    "Assign Pilot to Booking": {
+      "main": [
+        [
+          { "node": "Notify Pilot (WhatsApp)", "type": "main", "index": 0 },
+          { "node": "Notify Customer", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Notify Pilot (WhatsApp)": {
+      "main": [[{ "node": "Notify Staff (Telegram)", "type": "main", "index": 0 }]]
+    },
+    "Notify Customer": {
+      "main": [[{ "node": "Notify Staff (Telegram)", "type": "main", "index": 0 }]]
+    },
+    "Notify Staff (Telegram)": {
+      "main": [[{ "node": "Split Into Items", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

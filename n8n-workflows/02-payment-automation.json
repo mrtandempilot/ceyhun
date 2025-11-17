@@ -1,0 +1,317 @@
+{
+  "name": "Payment Automation & Ticket Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "payment-received",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-payment",
+      "name": "Payment Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "payment-automation-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.payment_status }}",
+              "operation": "equals",
+              "value2": "succeeded"
+            }
+          ]
+        }
+      },
+      "id": "check-payment-success",
+      "name": "Payment Successful?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/bookings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $json.body.booking_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-booking-details",
+      "name": "Get Booking Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [640, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/bookings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "eq.{{ $json.body.booking_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"confirmed\",\n  \"payment_status\": \"paid\",\n  \"payment_method\": \"{{ $('Payment Webhook').item.json.body.payment_method }}\",\n  \"payment_amount\": {{ $('Payment Webhook').item.json.body.amount }},\n  \"payment_date\": \"{{ $now() }}\"\n}",
+        "options": {}
+      },
+      "id": "update-booking-status",
+      "name": "Update Booking Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [860, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ticket-qr",
+              "name": "qr_code",
+              "value": "=https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ $json[0].id }}",
+              "type": "string"
+            },
+            {
+              "id": "ticket-id",
+              "name": "ticket_id",
+              "value": "=SKY{{ $json[0].id }}",
+              "type": "string"
+            },
+            {
+              "id": "customer-name",
+              "name": "customer_name",
+              "value": "={{ $json[0].customer_name }}",
+              "type": "string"
+            },
+            {
+              "id": "tour-name",
+              "name": "tour_name",
+              "value": "={{ $json[0].tour_name }}",
+              "type": "string"
+            },
+            {
+              "id": "tour-date",
+              "name": "tour_date",
+              "value": "={{ $json[0].booking_date }}",
+              "type": "string"
+            },
+            {
+              "id": "tour-time",
+              "name": "tour_time",
+              "value": "={{ $json[0].tour_start_time }}",
+              "type": "string"
+            },
+            {
+              "id": "adults",
+              "name": "adults",
+              "value": "={{ $json[0].adults }}",
+              "type": "number"
+            },
+            {
+              "id": "children",
+              "name": "children",
+              "value": "={{ $json[0].children || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "customer-phone",
+              "name": "customer_phone",
+              "value": "={{ $json[0].customer_phone }}",
+              "type": "string"
+            },
+            {
+              "id": "customer-email",
+              "name": "customer_email",
+              "value": "={{ $json[0].customer_email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "prepare-ticket-data",
+      "name": "Prepare Ticket Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1080, 200]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $env.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $json.customer_phone }}",
+        "messageType": "image",
+        "imageUrl": "={{ $json.qr_code }}",
+        "caption": "=🎉 Payment Confirmed!\n\n🎫 Ticket: {{ $json.ticket_id }}\n👤 Name: {{ $json.customer_name }}\n🪂 Tour: {{ $json.tour_name }}\n📅 Date: {{ $json.tour_date }}\n⏰ Time: {{ $json.tour_time }}\n👥 {{ $json.adults }} Adults, {{ $json.children }} Children\n\n✅ Your booking is confirmed!\n\nShow this QR code on arrival.\n📱 Contact: +90 545 616 48 40\n\nSee you soon! 🌟",
+        "additionalFields": {}
+      },
+      "id": "send-whatsapp-ticket",
+      "name": "Send WhatsApp Ticket",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [1300, 100],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-credentials",
+          "name": "WhatsApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.FROM_EMAIL }}",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "=🎫 Your Skywalkers Tour Ticket - {{ $json.tour_name }}",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }\n    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; padding: 30px; }\n    .header { text-align: center; color: #2563eb; margin-bottom: 30px; }\n    .ticket { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin: 20px 0; }\n    .qr-code { text-align: center; margin: 20px 0; }\n    .details { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; }\n    .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }\n    .footer { text-align: center; color: #6b7280; margin-top: 30px; font-size: 14px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>🪂 Skywalkers Tours</h1>\n      <p>Your Booking is Confirmed!</p>\n    </div>\n    \n    <div class=\"ticket\">\n      <h2 style=\"margin: 0 0 10px 0;\">🎫 {{ $json.ticket_id }}</h2>\n      <p style=\"margin: 0; opacity: 0.9;\">{{ $json.customer_name }}</p>\n    </div>\n    \n    <div class=\"qr-code\">\n      <img src=\"{{ $json.qr_code }}\" alt=\"QR Code\" style=\"max-width: 300px;\">\n      <p style=\"color: #6b7280; margin-top: 10px;\">Show this QR code on arrival</p>\n    </div>\n    \n    <div class=\"details\">\n      <h3 style=\"margin-top: 0; color: #1f2937;\">Booking Details</h3>\n      <div class=\"detail-row\">\n        <span><strong>Tour:</strong></span>\n        <span>{{ $json.tour_name }}</span>\n      </div>\n      <div class=\"detail-row\">\n        <span><strong>Date:</strong></span>\n        <span>{{ $json.tour_date }}</span>\n      </div>\n      <div class=\"detail-row\">\n        <span><strong>Time:</strong></span>\n        <span>{{ $json.tour_time }}</span>\n      </div>\n      <div class=\"detail-row\">\n        <span><strong>Participants:</strong></span>\n        <span>{{ $json.adults }} Adults, {{ $json.children }} Children</span>\n      </div>\n    </div>\n    \n    <div style=\"background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;\">\n      <p style=\"margin: 0; color: #92400e;\">⚠️ <strong>Important:</strong> Please arrive 20 minutes before your scheduled time.</p>\n    </div>\n    \n    <div class=\"footer\">\n      <p><strong>Contact Us</strong></p>\n      <p>📱 +90 545 616 48 40</p>\n      <p>📧 info@skywalkers-fethiye.com</p>\n      <p style=\"margin-top: 20px; font-size: 12px;\">Fethiye, Turkey 🇹🇷</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-email-ticket",
+      "name": "Send Email Ticket",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1300, 300],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.VERCEL_APP_URL }}/api/calendar/sync",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"bookingId\": \"{{ $('Get Booking Details').item.json[0].id }}\",\n  \"customerName\": \"{{ $json.customer_name }}\",\n  \"tourName\": \"{{ $json.tour_name }}\",\n  \"date\": \"{{ $json.tour_date }}\",\n  \"time\": \"{{ $json.tour_time }}\",\n  \"adults\": {{ $json.adults }},\n  \"children\": {{ $json.children }}\n}",
+        "options": {}
+      },
+      "id": "add-to-google-calendar",
+      "name": "Add to Google Calendar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1300, 500]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "=💰 **PAYMENT RECEIVED**\n\n✅ Booking Confirmed\n\n**Customer:** {{ $json.customer_name }}\n**Email:** {{ $json.customer_email }}\n**Phone:** {{ $json.customer_phone }}\n\n**Tour:** {{ $json.tour_name }}\n**Date:** {{ $json.tour_date }}\n**Time:** {{ $json.tour_time }}\n**Participants:** {{ $json.adults }} adults, {{ $json.children }} children\n\n**Payment:** ${{ $('Payment Webhook').item.json.body.amount }}\n**Method:** {{ $('Payment Webhook').item.json.body.payment_method }}\n\n🎫 Ticket sent via WhatsApp & Email\n📅 Added to Google Calendar",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "notify-telegram",
+      "name": "Notify Staff (Telegram)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1520, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-credentials",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Payment processed successfully\",\n  \"ticketId\": \"{{ $('Prepare Ticket Data').item.json.ticket_id }}\"\n}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1740, 300]
+    }
+  ],
+  "connections": {
+    "Payment Webhook": {
+      "main": [[{ "node": "Payment Successful?", "type": "main", "index": 0 }]]
+    },
+    "Payment Successful?": {
+      "main": [[{ "node": "Get Booking Details", "type": "main", "index": 0 }]]
+    },
+    "Get Booking Details": {
+      "main": [[{ "node": "Update Booking Status", "type": "main", "index": 0 }]]
+    },
+    "Update Booking Status": {
+      "main": [[{ "node": "Prepare Ticket Data", "type": "main", "index": 0 }]]
+    },
+    "Prepare Ticket Data": {
+      "main": [
+        [
+          { "node": "Send WhatsApp Ticket", "type": "main", "index": 0 },
+          { "node": "Send Email Ticket", "type": "main", "index": 0 },
+          { "node": "Add to Google Calendar", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Send WhatsApp Ticket": {
+      "main": [[{ "node": "Notify Staff (Telegram)", "type": "main", "index": 0 }]]
+    },
+    "Send Email Ticket": {
+      "main": [[{ "node": "Notify Staff (Telegram)", "type": "main", "index": 0 }]]
+    },
+    "Add to Google Calendar": {
+      "main": [[{ "node": "Notify Staff (Telegram)", "type": "main", "index": 0 }]]
+    },
+    "Notify Staff (Telegram)": {
+      "main": [[{ "node": "Webhook Response", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
