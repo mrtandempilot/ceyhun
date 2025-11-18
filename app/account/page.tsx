@@ -52,18 +52,54 @@ export default function CustomerAccountPage() {
         return;
       }
 
-      // Load customer data
+      // Load customer data - use maybeSingle() to avoid error if no customer exists
       const { data: customer, error: customerError } = await supabase
         .from('customers')
         .select('*')
         .eq('email', user.email)
-        .single();
+        .maybeSingle();
 
       if (customerError) {
         console.error('Error fetching customer:', customerError);
       } else if (customer) {
         setCustomerData(customer);
         setEditForm(customer);
+      } else {
+        // Customer doesn't exist - auto-create one
+        console.log('No customer record found, creating one...');
+        
+        const nameParts = (user.user_metadata?.name || user.email?.split('@')[0] || 'Customer').split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        const { data: newCustomer, error: createError } = await supabase
+          .from('customers')
+          .insert({
+            user_id: user.id,
+            email: user.email,
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'Customer',
+            first_name: firstName,
+            last_name: lastName,
+            phone: user.user_metadata?.phone || user.phone || '',
+            status: 'active',
+            customer_type: 'individual',
+            source: 'direct',
+            vip_status: false,
+            total_bookings: 0,
+            total_spent: 0,
+            lifetime_value: 0,
+            average_booking_value: 0,
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating customer:', createError);
+        } else if (newCustomer) {
+          console.log('✅ Customer record created');
+          setCustomerData(newCustomer);
+          setEditForm(newCustomer);
+        }
       }
 
       // Load customer bookings
