@@ -20,8 +20,11 @@ export default function ChannelsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'messages' | 'settings'>('overview');
+  const [messageTab, setMessageTab] = useState<'website' | 'whatsapp'>('website');
   const [conversations, setConversations] = useState<any[]>([]);
+  const [whatsappConversations, setWhatsappConversations] = useState<any[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
+  const [selectedWhatsAppConv, setSelectedWhatsAppConv] = useState<any>(null);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
