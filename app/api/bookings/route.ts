@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       customer_email: user.email || '',
       customer_name: user.user_metadata?.name || user.email?.split('@')[0] || 'Guest',
+      customer_phone: body.customer_phone || customerPhone || '',
       tour_name: body.tour_name,
       booking_date: body.booking_date,
       tour_start_time: body.tour_start_time,

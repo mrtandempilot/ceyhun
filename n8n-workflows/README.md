@@ -2,6 +2,35 @@
 
 Complete automation system for your paragliding tour business using n8n Cloud.
 
+---
+
+## 🚨 IMPORTANT: Use FREE Version Workflows!
+
+**Are you getting this error?** `Invalid URL: /rest/v1/bookings. URL must start with "http" or "https".`
+
+### 💡 The Problem
+Environment variables are a **PAID feature** in n8n Cloud. The original workflow files use `{{ $env.SUPABASE_URL }}` which won't work on the free tier.
+
+### ✅ The Solution  
+**Use the FREE version workflows instead!**
+
+- ✅ **03-pilot-assignment-FREE.json** (works with free n8n)
+- ✅ **04-preflight-reminders-FREE.json** (works with free n8n)
+
+### 📖 Setup Guide
+**👉 [FREE-VERSION-SETUP.md](./FREE-VERSION-SETUP.md)** - Complete setup instructions (5 minutes)
+
+These FREE versions use direct values instead of environment variables. You just need to replace a few placeholders with your actual IDs.
+
+---
+
+### 💳 Have n8n Paid Plan?
+If you have a paid n8n plan with environment variables support:
+- Use the original files: `03-pilot-assignment.json` and `04-preflight-reminders.json`
+- Follow **[ENV-SETUP-GUIDE.md](./ENV-SETUP-GUIDE.md)** to configure environment variables
+
+---
+
 ## 📦 What's Included
 
 You already have:

@@ -1,0 +1,287 @@
+{
+  "name": "Pre-Flight Reminders & Weather Check",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "daily-trigger",
+      "name": "Daily at 9:00 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "tomorrow-date",
+              "name": "tomorrow",
+              "value": "={{ $now.plus(1, 'day').toFormat('yyyy-MM-dd') }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "calculate-tomorrow",
+      "name": "Get Tomorrow's Date",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR_SUPABASE_PROJECT_ID.supabase.co/rest/v1/bookings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "booking_date",
+              "value": "eq.{{ $json.tomorrow }}"
+            },
+            {
+              "name": "status",
+              "value": "eq.confirmed"
+            },
+            {
+              "name": "select",
+              "value": "*"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-tomorrow-bookings",
+      "name": "Get Tomorrow's Bookings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [640, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "any-bookings",
+      "name": "Any Bookings Tomorrow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {},
+      "id": "split-bookings",
+      "name": "Split Into Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1080, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openweathermap.org/data/2.5/forecast",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "Fethiye,TR"
+            },
+            {
+              "name": "appid",
+              "value": "YOUR_OPENWEATHER_API_KEY_HERE"
+            },
+            {
+              "name": "units",
+              "value": "metric"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-weather",
+      "name": "Get Weather Forecast",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1300, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const weather = $input.first().json;\nconst booking = $('Split Into Items').item.json;\n\n// Find tomorrow's forecast\nconst tomorrowDate = $('Get Tomorrow\\'s Date').item.json.tomorrow;\nconst forecastList = weather.list || [];\n\n// Get forecast for booking time\nconst bookingTime = booking.tour_start_time;\nconst bookingHour = parseInt(bookingTime.split(':')[0]);\n\n// Find closest forecast to booking time\nlet closestForecast = forecastList[0];\nfor (const forecast of forecastList) {\n  const forecastDate = new Date(forecast.dt * 1000);\n  const forecastDateStr = forecastDate.toISOString().split('T')[0];\n  \n  if (forecastDateStr === tomorrowDate) {\n    const forecastHour = forecastDate.getHours();\n    if (Math.abs(forecastHour - bookingHour) < Math.abs(closestForecast.dt_txt ? new Date(closestForecast.dt_txt).getHours() - bookingHour : 24)) {\n      closestForecast = forecast;\n    }\n  }\n}\n\nconst main = closestForecast.main || {};\nconst wind = closestForecast.wind || {};\nconst weather_desc = closestForecast.weather?.[0] || {};\n\n// Safety check\nconst windSpeed = wind.speed || 0;\nconst temp = main.temp || 20;\nconst rain = closestForecast.rain?.['3h'] || 0;\nconst clouds = closestForecast.clouds?.all || 0;\n\n// Determine if safe to fly\nlet safe = true;\nlet warnings = [];\n\n// Wind check (> 25 km/h is dangerous)\nif (windSpeed > 25) {\n  safe = false;\n  warnings.push(`⚠️ HIGH WIND: ${windSpeed} km/h`);\n}\n\n// Rain check\nif (rain > 0) {\n  safe = false;\n  warnings.push(`🌧️ RAIN: ${rain}mm expected`);\n}\n\n// Cloud coverage (> 80% might affect visibility)\nif (clouds > 80) {\n  warnings.push(`☁️ Heavy clouds: ${clouds}%`);\n}\n\nreturn [{\n  json: {\n    ...booking,\n    weather: {\n      temperature: temp,\n      windSpeed: windSpeed,\n      description: weather_desc.description,\n      rain: rain,\n      clouds: clouds,\n      safe: safe,\n      warnings: warnings\n    }\n  }\n}];"
+      },
+      "id": "analyze-weather",
+      "name": "Analyze Weather Safety",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1520, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.weather.safe }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "weather-safe",
+      "name": "Weather Safe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1740, 200]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID_HERE",
+        "recipientPhoneNumber": "={{ $json.customer_phone }}",
+        "textBody": "=🪂 **Flight Reminder - Tomorrow!**\n\nHello {{ $json.customer_name }}! ✨\n\nYour adventure is tomorrow!\n\n📅 **Date:** {{ $json.booking_date }}\n⏰ **Time:** {{ $json.tour_start_time }}\n🪂 **Tour:** {{ $json.tour_name }}\n👥 **Participants:** {{ $json.adults }} adults{{ $json.children ? ', ' + $json.children + ' children' : '' }}\n👨‍✈️ **Pilot:** {{ $json.pilot_name || 'Will be assigned' }}\n\n🌤️ **Weather Forecast:**\n🌡️ Temperature: {{ $json.weather.temperature }}°C\n💨 Wind: {{ $json.weather.windSpeed }} km/h\n☁️ {{ $json.weather.description }}\n\n✅ **What to bring:**\n• Comfortable clothes\n• Sports shoes\n• Sunglasses\n• Camera (optional)\n• Good mood! 😊\n\n📍 **Meeting Point:**\n{{ $json.hotel_name ? 'We\\'ll pick you up from ' + $json.hotel_name : 'Skywalkers Office, Fethiye' }}\n⏰ {{ $json.hotel_name ? 'Pickup 30 minutes before' : 'Please arrive 20 minutes early' }}\n\n📱 Questions? Call: +90 545 616 48 40\n\nSee you tomorrow! 🌟",
+        "additionalFields": {}
+      },
+      "id": "send-reminder-good-weather",
+      "name": "Send Reminder (Good Weather)",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [1960, 80],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-credentials",
+          "name": "WhatsApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID_HERE",
+        "recipientPhoneNumber": "={{ $json.customer_phone }}",
+        "textBody": "=⚠️ **Weather Alert - Flight Tomorrow**\n\nHello {{ $json.customer_name }},\n\nWe're monitoring the weather for your flight tomorrow:\n\n📅 **Date:** {{ $json.booking_date }}\n⏰ **Time:** {{ $json.tour_start_time }}\n\n🌤️ **Current Forecast:**\n{{ $json.weather.warnings.join('\\n') }}\n\n⚠️ **Important:**\nYour safety is our priority. We may need to reschedule if conditions don't improve.\n\nWe'll contact you by 7 PM tonight with a final decision.\n\n✅ **Options if we reschedule:**\n• Choose another date\n• Full refund\n\nWe're sorry for any inconvenience. Weather in paragliding is unpredictable, but safety always comes first.\n\n📱 Questions? Call: +90 545 616 48 40\n\nThank you for understanding! 🙏",
+        "additionalFields": {}
+      },
+      "id": "send-weather-warning",
+      "name": "Send Weather Warning",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [1960, 320],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-credentials",
+          "name": "WhatsApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID_HERE",
+        "recipientPhoneNumber": "={{ $json.pilot_phone }}",
+        "textBody": "=👨‍✈️ **Flight Tomorrow - Weather {{ $json.weather.safe ? '✅ OK' : '⚠️ ALERT' }}**\n\nHi {{ $json.pilot_name }}!\n\nFlight details for tomorrow:\n\n**Customer:** {{ $json.customer_name }}\n**Tour:** {{ $json.tour_name }}\n**Time:** {{ $json.tour_start_time }}\n**Participants:** {{ $json.adults }} adults{{ $json.children ? ', ' + $json.children + ' children' : '' }}\n\n🌤️ **Weather Forecast:**\n🌡️ {{ $json.weather.temperature }}°C\n💨 Wind: {{ $json.weather.windSpeed }} km/h\n{{ $json.weather.description }}\n\n{{ $json.weather.safe ? '✅ Conditions look good!' : '⚠️ Warning: ' + $json.weather.warnings.join(', ') }}\n\n{{ $json.weather.safe ? 'Prepare equipment and confirm readiness.' : 'Monitor weather. May need to reschedule.' }}\n\n📱 Contact: {{ $json.customer_phone }}",
+        "additionalFields": {}
+      },
+      "id": "notify-pilot",
+      "name": "Notify Pilot",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [2180, 200],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-credentials",
+          "name": "WhatsApp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID_HERE",
+        "text": "=📅 **PRE-FLIGHT REMINDER SENT**\n\n**Booking:** #{{ $json.id }}\n**Customer:** {{ $json.customer_name }}\n**Tour:** {{ $json.tour_name }}\n**Tomorrow:** {{ $json.booking_date }} at {{ $json.tour_start_time }}\n**Pilot:** {{ $json.pilot_name || 'Not assigned' }}\n\n🌤️ **Weather:**\n🌡️ {{ $json.weather.temperature }}°C\n💨 {{ $json.weather.windSpeed }} km/h\n{{ $json.weather.description }}\n\n{{ $json.weather.safe ? '✅ Safe to fly' : '⚠️ WEATHER ALERT: ' + $json.weather.warnings.join(', ') }}\n\n{{ $json.weather.safe ? '✅ Customer & pilot notified' : '⚠️ Customer warned, may need to reschedule' }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "notify-staff",
+      "name": "Notify Staff",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2400, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-credentials",
+          "name": "Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily at 9:00 AM": {
+      "main": [[{ "node": "Get Tomorrow's Date", "type": "main", "index": 0 }]]
+    },
+    "Get Tomorrow's Date": {
+      "main": [[{ "node": "Get Tomorrow's Bookings", "type": "main", "index": 0 }]]
+    },
+    "Get Tomorrow's Bookings": {
+      "main": [[{ "node": "Any Bookings Tomorrow?", "type": "main", "index": 0 }]]
+    },
+    "Any Bookings Tomorrow?": {
+      "main": [[{ "node": "Split Into Items", "type": "main", "index": 0 }]]
+    },
+    "Split Into Items": {
+      "main": [[{ "node": "Get Weather Forecast", "type": "main", "index": 0 }]]
+    },
+    "Get Weather Forecast": {
+      "main": [[{ "node": "Analyze Weather Safety", "type": "main", "index": 0 }]]
+    },
+    "Analyze Weather Safety": {
+      "main": [[{ "node": "Weather Safe?", "type": "main", "index": 0 }]]
+    },
+    "Weather Safe?": {
+      "main": [
+        [{ "node": "Send Reminder (Good Weather)", "type": "main", "index": 0 }],
+        [{ "node": "Send Weather Warning", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Reminder (Good Weather)": {
+      "main": [[{ "node": "Notify Pilot", "type": "main", "index": 0 }]]
+    },
+    "Send Weather Warning": {
+      "main": [[{ "node": "Notify Pilot", "type": "main", "index": 0 }]]
+    },
+    "Notify Pilot": {
+      "main": [[{ "node": "Notify Staff", "type": "main", "index": 0 }]]
+    },
+    "Notify Staff": {
+      "main": [[{ "node": "Split Into Items", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

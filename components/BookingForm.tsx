@@ -137,7 +137,13 @@ export default function BookingForm({ onSuccess, tourId }: BookingFormProps) {
     setLoading(true);
 
     try {
-      await createBooking(formData);
+      // Include phone number in the booking data
+      const bookingDataWithPhone = {
+        ...formData,
+        customer_phone: customerInfo.phone
+      };
+      
+      await createBooking(bookingDataWithPhone);
       setSuccess(true);
       
       // Reset form
@@ -151,6 +157,15 @@ export default function BookingForm({ onSuccess, tourId }: BookingFormProps) {
         total_amount: 100,
         notes: '',
         hotel_name: '',
+      });
+      
+      setCustomerInfo({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        country: '',
       });
 
       if (onSuccess) {
@@ -259,6 +274,22 @@ export default function BookingForm({ onSuccess, tourId }: BookingFormProps) {
             onChange={(e) => handleParticipantsChange(formData.adults, parseInt(e.target.value) || 0)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 bg-white"
           />
+        </div>
+
+        {/* Phone Number */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Phone Number (for WhatsApp ticket delivery)
+          </label>
+          <input
+            type="tel"
+            value={customerInfo.phone}
+            onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 bg-white"
+            placeholder="+90 555 123 4567"
+            required
+          />
+          <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +90 for Turkey)</p>
         </div>
 
         {/* Hotel Name */}

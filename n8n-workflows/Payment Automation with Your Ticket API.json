@@ -1,0 +1,405 @@
+{
+  "name": "Payment Automation with Your Ticket API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "payment-received",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "156f05d4-56a8-4eef-b1be-6a8a6a43e2c9",
+      "name": "Payment Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1008,
+        160
+      ],
+      "webhookId": "payment-automation-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "payment-check",
+              "leftValue": "={{ $json.body.body.payment_status }}",
+              "rightValue": "succeeded",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e1d7546b-e919-4804-a461-2a48a796e818",
+      "name": "Payment Successful?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://wpprlxuqvrinqefybatt.supabase.co/rest/v1/bookings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ \"eq.\" + $json.body.body.booking_id }}"
+            },
+            {
+              "name": "select",
+              "value": "*"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwcHJseHVxdnJpbnFlZnliYXR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMDYwNzIsImV4cCI6MjA3NzY4MjA3Mn0.pxrLR9JcbpQcrEMjjSv2zkuztcWvgj-6u3uDib6IyNE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwcHJseHVxdnJpbnFlZnliYXR0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjEwNjA3MiwiZXhwIjoyMDc3NjgyMDcyfQ.TdKM3Am5YKrWZmGMFY9eSXyt8uNMqo4bLF_m6DJkozw"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "61500bab-1d7b-43ba-bf36-4a6aac96bd57",
+      "name": "Get Booking Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -560,
+        160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "48tw7kzKYgTnEg1c",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://wpprlxuqvrinqefybatt.supabase.co/rest/v1/bookings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwcHJseHVxdnJpbnFlZnliYXR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMDYwNzIsImV4cCI6MjA3NzY4MjA3Mn0.pxrLR9JcbpQcrEMjjSv2zkuztcWvgj-6u3uDib6IyNE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwcHJseHVxdnJpbnFlZnliYXR0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjEwNjA3MiwiZXhwIjoyMDc3NjgyMDcyfQ.TdKM3Am5YKrWZmGMFY9eSXyt8uNMqo4bLF_m6DJkozw"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"confirmed\",\n  \"total_amount\": {{ $('Payment Webhook').item.json.body.body.amount }}\n}",
+        "options": {}
+      },
+      "id": "81dbd1c0-9422-4a3b-8e66-90fdd7a489a5",
+      "name": "Update Booking Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -112,
+        160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "48tw7kzKYgTnEg1c",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://ceyhun.vercel.app/api/tickets/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"booking_id\": \"{{ $('Payment Webhook').item.json.body.body.booking_id }}\"\n}",
+        "options": {}
+      },
+      "id": "348b4087-266e-4211-96c8-e35d5df9235a",
+      "name": "Generate Ticket (Your API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        112,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "825162557352737",
+        "recipientPhoneNumber": "={{ $json.customer_phone }}",
+        "messageType": "image",
+        "mediaLink": "={{ $json.qr_code_url }}",
+        "additionalFields": {}
+      },
+      "id": "f748c982-89dd-410e-874e-49e5da794c3f",
+      "name": "Send WhatsApp Ticket",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        160
+      ],
+      "webhookId": "whatsapp-ticket-webhook",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "1rK2sMxptbuJZK7D",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1291038782",
+        "text": "=💰 **PAYMENT RECEIVED**\n\n✅ Booking Confirmed\n\n**Customer:** {{ $json.customer_name }}\n**Email:** {{ $json.customer_email }}\n**Phone:** {{ $json.customer_phone }}\n\n**Tour:** {{ $json.tour_name }}\n**Date:** {{ $json.booking_date }}\n**Time:** {{ $json.tour_start_time }}\n**Participants:** {{ $json.adults }} adults{{ $json.children > 0 ? ', ' + $json.children + ' children' : '' }}\n\n**Payment:** ${{ $json.total_amount }}\n**Ticket ID:** {{ $json.ticket_id }}\n\n🎫 Ticket sent via WhatsApp\n✅ Booking status updated",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "cf80fc09-c31f-4860-80ba-35a876980699",
+      "name": "Notify Staff (Telegram)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        160
+      ],
+      "webhookId": "telegram-notification-webhook",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Payment processed successfully\",\n  \"ticketId\": \"{{ $('Generate Ticket (Your API)').item.json.ticket_id }}\",\n  \"bookingId\": \"{{ $('Payment Webhook').item.json.body.booking_id }}\"\n}",
+        "options": {}
+      },
+      "id": "d67ad8a5-40e1-40ce-887a-d983801dded0",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        784,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"message\": \"Payment failed or pending\",\n  \"payment_status\": \"{{ $('Payment Webhook').item.json.body.payment_status }}\"\n}",
+        "options": {}
+      },
+      "id": "0710c496-c5de-4e52-9707-e24551f18130",
+      "name": "Payment Failed Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -560,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the first booking from the Supabase array response\nconst bookings = $input.all();\n\nif (bookings.length > 0 && Array.isArray(bookings[0].json)) {\n  // Supabase returns an array, get the first item\n  const firstBooking = bookings[0].json[0];\n  \n  return [{\n    json: firstBooking\n  }];\n} else if (bookings.length > 0) {\n  // If it's already a single object, just return it\n  return bookings;\n} else {\n  // No data found\n  return [];\n}"
+      },
+      "id": "8ebd363e-ab1d-4759-8a6b-937dd952c27f",
+      "name": "Extract First Booking",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "080b34a9-3a68-4e31-b8ac-bab8b994dc31",
+      "name": "Debug - Check Booking ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -560,
+        -32
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Payment Webhook": {
+      "main": [
+        [
+          {
+            "node": "Payment Successful?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payment Successful?": {
+      "main": [
+        [
+          {
+            "node": "Get Booking Details",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Debug - Check Booking ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Payment Failed Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Booking Details": {
+      "main": [
+        [
+          {
+            "node": "Extract First Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Booking Status": {
+      "main": [
+        [
+          {
+            "node": "Generate Ticket (Your API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Ticket (Your API)": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Ticket": {
+      "main": [
+        [
+          {
+            "node": "Notify Staff (Telegram)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Staff (Telegram)": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract First Booking": {
+      "main": [
+        [
+          {
+            "node": "Update Booking Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d3b40f02-5a7f-4b56-b8b3-4b4747a8036f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8d28a9671075f0b5891a19de3804cee75b0d422edb952b37771a7916cd08431c"
+  },
+  "id": "DiT6x70MHDRGotjo",
+  "tags": []
+}

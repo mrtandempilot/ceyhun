@@ -37,4 +37,5 @@ export interface CreateBookingInput {
   total_amount?: number;
   notes?: string;
   hotel_name?: string;
+  customer_phone?: string;
 }
