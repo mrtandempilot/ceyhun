@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create booking in Supabase
-    const ticketId = generateUniqueTicketId(); // Generate unique ticket ID
+    // Don't generate ticket_id here - let the database trigger handle it when status = confirmed
     const bookingData = {
       user_id: user.id,
       customer_email: user.email || '',
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       channel: 'website',
       status: 'pending',
       created_at: new Date().toISOString(),
-      ticket_id: ticketId, // Add ticket ID to booking data
+      // ticket_id will be generated automatically by n8n workflow when status = confirmed
     };
 
     const { data, error } = await supabase

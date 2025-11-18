@@ -1,8 +1,5 @@
 -- =====================================================
--- AUTOMATIC TICKET GENERATION & SENDING
--- =====================================================
--- This creates a database trigger that automatically generates
--- and sends tickets when a booking status changes to 'confirmed'
+-- COPY ALL OF THIS INTO SUPABASE SQL EDITOR AND RUN
 -- =====================================================
 
 -- Step 1: Create the function that will be triggered
@@ -25,7 +22,6 @@ BEGIN
     );
     
     -- Call the n8n webhook using pg_net extension
-    -- Note: This requires pg_net extension to be enabled in Supabase
     PERFORM
       net.http_post(
         url := webhook_url,
@@ -47,33 +43,15 @@ CREATE TRIGGER trigger_auto_generate_ticket
   FOR EACH ROW
   EXECUTE FUNCTION auto_generate_ticket();
 
--- =====================================================
--- VERIFICATION
--- =====================================================
-
--- Check if trigger exists
+-- Step 3: Verify trigger exists
 SELECT 
   trigger_name,
   event_manipulation,
-  event_object_table,
-  action_statement
+  event_object_table
 FROM information_schema.triggers
 WHERE trigger_name = 'trigger_auto_generate_ticket';
 
 -- =====================================================
--- NOTES
--- =====================================================
--- IMPORTANT: Before enabling this trigger:
--- 1. Enable pg_net extension in Supabase (if not already enabled)
--- 2. Replace 'YOUR_N8N_URL' with your actual n8n webhook URL
--- 3. Make sure your n8n workflow is active and running
---
--- How it works:
--- 1. When a booking status changes to 'confirmed'
--- 2. The trigger calls your n8n webhook
--- 3. n8n generates the ticket and sends it via WhatsApp
--- 4. No manual intervention needed!
---
--- To disable this trigger:
--- DROP TRIGGER IF EXISTS trigger_auto_generate_ticket ON bookings;
+-- EXPECTED RESULT:
+-- Should show 1 row with trigger_name = 'trigger_auto_generate_ticket'
 -- =====================================================

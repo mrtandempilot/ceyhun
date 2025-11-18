@@ -2,7 +2,7 @@
 
 ## 🎯 Complete Automatic Flow - No Manual Commands!
 
-Your n8n webhook: `https://mvt36n7e.rpcld.com/webhook/payment-received`
+Your n8n webhook: `https://skywalkers.app.n8n.cloud/webhook/payment-received`
 
 ---
 
@@ -37,11 +37,11 @@ Your n8n webhook: `https://mvt36n7e.rpcld.com/webhook/payment-received`
 
 ### Step 3: Verify n8n Workflow is Active
 
-1. Open your n8n: https://mvt36n7e.rpcld.com
+1. Open your n8n: https://skywalkers.app.n8n.cloud
 2. Go to **Workflows**
 3. Find: "Payment Automation with Your Ticket API"
 4. Make sure it's **Active** (toggle should be ON)
-5. ✅ Webhook URL should be: `https://mvt36n7e.rpcld.com/webhook/payment-received`
+5. ✅ Webhook URL should be: `https://skywalkers.app.n8n.cloud/webhook/payment-received`
 
 ---
 
@@ -131,7 +131,7 @@ WHERE id = YOUR_BOOKING_ID; -- Replace with actual ID from step 2
 
 ```bash
 # Test the n8n webhook directly
-curl -X POST https://mvt36n7e.rpcld.com/webhook/payment-received \
+curl -X POST https://skywalkers.app.n8n.cloud/webhook/payment-received \
   -H "Content-Type: application/json" \
   -d '{
     "body": {
@@ -185,7 +185,7 @@ LIMIT 10;
 ```
 
 ### Check n8n Execution Logs:
-1. Open n8n: https://mvt36n7e.rpcld.com
+1. Open n8n: https://skywalkers.app.n8n.cloud
 2. Click **Executions** in left sidebar
 3. See all webhook calls and their status
 4. Click any execution to see detailed logs
@@ -219,7 +219,7 @@ WHERE trigger_name = 'trigger_auto_generate_ticket';
 
 **5. Test Webhook Manually:**
 ```bash
-curl -X POST https://mvt36n7e.rpcld.com/webhook/payment-received \
+curl -X POST https://skywalkers.app.n8n.cloud/webhook/payment-received \
   -H "Content-Type: application/json" \
   -d '{"body":{"body":{"booking_id":1,"payment_status":"succeeded","amount":100}}}'
 ```
@@ -234,7 +234,7 @@ Booking Status Changed → confirmed
          ↓
 Database Trigger Fires
          ↓
-Calls n8n Webhook (https://mvt36n7e.rpcld.com/webhook/payment-received)
+Calls n8n Webhook (https://skywalkers.app.n8n.cloud/webhook/payment-received)
          ↓
 n8n Workflow Executes:
   1. Validates payment status ✅
@@ -285,5 +285,5 @@ No more running commands! Just confirm and go!
 ---
 
 **Last Updated:** November 18, 2025
-**Webhook URL:** https://mvt36n7e.rpcld.com/webhook/payment-received
+**Webhook URL:** https://skywalkers.app.n8n.cloud/webhook/payment-received
 **Status:** Production Ready ✅
