@@ -174,8 +174,8 @@ export async function POST(request: NextRequest) {
       // Continue even if calendar creation fails
     }
 
-    // Send email notification to admin
-    console.log('📧 Attempting to send booking email notification...');
+    // Send email notifications
+    console.log('📧 Attempting to send booking email notifications...');
     try {
       // Import email functions
       const { sendEmailNotification, EmailTemplates } = await import('@/lib/email');
@@ -186,22 +186,27 @@ export async function POST(request: NextRequest) {
         total_amount: booking.total_amount,
         booking_date: booking.booking_date,
         customer_email: booking.customer_email,
-        customer_phone: user.phone || ''
+        customer_phone: booking.customer_phone || user.phone || '',
+        tour_start_time: booking.tour_start_time,
+        adults: booking.adults,
+        children: booking.children
       };
 
-      console.log('📧 Email data:', emailData);
-      console.log('📧 Sending to: faralyaworks@gmail.com');
+      // Send email to admin
+      console.log('📧 Sending admin notification to: faralyaworks@gmail.com');
+      const adminNotification = EmailTemplates.bookingNotification(emailData);
+      adminNotification.to = 'faralyaworks@gmail.com';
+      await sendEmailNotification(adminNotification);
 
-      // Create email template
-      const emailNotification = EmailTemplates.bookingNotification(emailData);
-      emailNotification.to = 'faralyaworks@gmail.com';
+      // Send confirmation email to customer
+      console.log('📧 Sending customer confirmation to:', booking.customer_email);
+      const customerConfirmation = EmailTemplates.customerBookingConfirmation(emailData);
+      customerConfirmation.to = booking.customer_email;
+      await sendEmailNotification(customerConfirmation);
 
-      // Send email
-      const result = await sendEmailNotification(emailNotification);
-
-      console.log('📧 Email send result:', result ? 'Success' : 'Failed');
+      console.log('📧 Both emails sent successfully');
     } catch (emailError: any) {
-      console.error('📧 Failed to send email notification:', emailError);
+      console.error('📧 Failed to send email notifications:', emailError);
       console.error('📧 Error details:', emailError?.message || emailError);
       // Don't fail the booking if email fails
     }

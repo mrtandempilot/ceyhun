@@ -224,6 +224,117 @@ Please check the payments dashboard for more details.
     };
   }
 
+  static customerBookingConfirmation(data: {
+    customer_name: string;
+    tour_name: string;
+    total_amount: number;
+    booking_date: string;
+    tour_start_time: string;
+    adults: number;
+    children: number;
+    customer_phone?: string;
+  }): EmailNotification {
+    return {
+      to: '', // Will be set by caller
+      subject: `✅ Booking Confirmed - ${data.tour_name}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h1 style="color: #059669; text-align: center; margin-bottom: 30px;">🎉 Booking Confirmed!</h1>
+
+            <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="color: #166534; font-size: 16px; margin-top: 0;">Dear ${data.customer_name},</p>
+              <p style="color: #374151; margin-bottom: 0;">Thank you for booking with Ölüdeniz Paragliding! Your adventure is confirmed.</p>
+            </div>
+
+            <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h2 style="color: #1e40af; margin-top: 0;">Your Booking Details</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Tour:</td>
+                  <td style="padding: 8px 0; color: #6b7280;">${data.tour_name}</td>
+                </tr>
+                <tr style="background-color: #f9fafb;">
+                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Date:</td>
+                  <td style="padding: 8px 0; color: #6b7280;">${new Date(data.booking_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Time:</td>
+                  <td style="padding: 8px 0; color: #6b7280;">${data.tour_start_time}</td>
+                </tr>
+                <tr style="background-color: #f9fafb;">
+                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Participants:</td>
+                  <td style="padding: 8px 0; color: #6b7280;">${data.adults} Adult${data.adults > 1 ? 's' : ''}${data.children > 0 ? `, ${data.children} Child${data.children > 1 ? 'ren' : ''}` : ''}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Total Amount:</td>
+                  <td style="padding: 8px 0; color: #059669; font-weight: bold; font-size: 18px;">₺${data.total_amount}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <h3 style="color: #92400e; margin-top: 0; font-size: 16px;">📱 Your Ticket</h3>
+              <p style="color: #78350f; margin-bottom: 0;">You will receive your digital ticket via WhatsApp shortly. Please keep it with you on the day of your tour.</p>
+            </div>
+
+            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <h3 style="color: #374151; margin-top: 0; font-size: 16px;">📋 Important Information</h3>
+              <ul style="color: #6b7280; margin: 0; padding-left: 20px;">
+                <li style="margin-bottom: 8px;">Please arrive 15 minutes before your scheduled time</li>
+                <li style="margin-bottom: 8px;">Wear comfortable clothes and closed shoes</li>
+                <li style="margin-bottom: 8px;">Maximum weight limit: 110 kg (240 lbs)</li>
+                <li style="margin-bottom: 8px;">Bring your ticket (we'll send it via WhatsApp)</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+              <p style="color: #6b7280; font-size: 14px;">If you have any questions, feel free to contact us:</p>
+              <p style="color: #2563eb; font-weight: bold; margin: 5px 0;">📞 +90 XXX XXX XX XX</p>
+              <p style="color: #2563eb; font-weight: bold; margin: 5px 0;">📧 info@oludeniztours.com</p>
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
+              <p>See you soon for an unforgettable paragliding experience! 🪂</p>
+              <p style="margin-top: 10px; font-size: 12px;">This is an automated confirmation from Ölüdeniz Paragliding Tours.</p>
+            </div>
+          </div>
+        </div>
+      `,
+      text: `
+Booking Confirmed!
+
+Dear ${data.customer_name},
+
+Thank you for booking with Ölüdeniz Paragliding! Your adventure is confirmed.
+
+YOUR BOOKING DETAILS:
+Tour: ${data.tour_name}
+Date: ${new Date(data.booking_date).toLocaleDateString()}
+Time: ${data.tour_start_time}
+Participants: ${data.adults} Adult${data.adults > 1 ? 's' : ''}${data.children > 0 ? `, ${data.children} Child${data.children > 1 ? 'ren' : ''}` : ''}
+Total Amount: ₺${data.total_amount}
+
+YOUR TICKET:
+You will receive your digital ticket via WhatsApp shortly. Please keep it with you on the day of your tour.
+
+IMPORTANT INFORMATION:
+- Please arrive 15 minutes before your scheduled time
+- Wear comfortable clothes and closed shoes
+- Maximum weight limit: 110 kg (240 lbs)
+- Bring your ticket (we'll send it via WhatsApp)
+
+CONTACT US:
+Phone: +90 XXX XXX XX XX
+Email: info@oludeniztours.com
+
+See you soon for an unforgettable paragliding experience!
+
+This is an automated confirmation from Ölüdeniz Paragliding Tours.
+      `.trim(),
+    };
+  }
+
   static cancellationNotification(data: {
     customer_name: string;
     tour_name: string;
