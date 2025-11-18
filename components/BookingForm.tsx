@@ -250,18 +250,18 @@ export default function BookingForm({ onSuccess, tourId }: BookingFormProps) {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Number of Adults
           </label>
-          <input
-            type="number"
-            min="1"
-            max="10"
+          <select
             value={formData.adults}
-            onChange={(e) => {
-              const value = e.target.value === '' ? 1 : parseInt(e.target.value);
-              handleParticipantsChange(value, formData.children || 0);
-            }}
+            onChange={(e) => handleParticipantsChange(parseInt(e.target.value), formData.children || 0)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 bg-white"
             required
-          />
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+              <option key={num} value={num}>
+                {num} Adult{num > 1 ? 's' : ''}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Children */}
