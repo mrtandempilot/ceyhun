@@ -24,19 +24,8 @@ export async function POST(request: Request) {
     // Generate comprehensive ticket with proper ticket ID
     const generatedTicketId = booking.ticket_id || `TICKET-${booking.id}-${Date.now()}`;
     
-    // Create comprehensive QR code data with all tour information
-    const qrData = JSON.stringify({
-      ticket_id: generatedTicketId,
-      booking_id: booking.id,
-      customer: booking.customer_name,
-      tour: booking.tour_name,
-      date: booking.booking_date,
-      time: booking.tour_start_time || 'TBD',
-      adults: booking.adults,
-      children: booking.children,
-      total: booking.total_amount,
-      status: booking.status
-    });
+    // Create QR code that links to ticket verification page
+    const ticketUrl = `https://ceyhun.vercel.app/ticket/${generatedTicketId}`;
     
     const ticketData = {
       ticket_id: generatedTicketId,
@@ -54,7 +43,8 @@ export async function POST(request: Request) {
       hotel_name: booking.hotel_name,
       notes: booking.notes,
       status: booking.status,
-      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`,
+      ticket_url: ticketUrl,
+      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(ticketUrl)}`,
     };
 
     // If ticket_id was not present, update the booking with the new ticket_id
