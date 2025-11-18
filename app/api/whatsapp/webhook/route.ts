@@ -161,8 +161,55 @@ async function handleIncomingMessage(message: any, contact: any) {
         console.log('⚠️ Unsupported message type:', message.type);
     }
 
-    // Save user message to database
-    const { error: dbError } = await supabaseAdmin.from('conversations').insert({
+    // Get or create WhatsApp conversation
+    let conversationId;
+    const { data: existingConv } = await supabaseAdmin
+      .from('whatsapp_conversations')
+      .select('id')
+      .eq('phone_number', phoneNumber)
+      .single();
+
+    if (existingConv) {
+      conversationId = existingConv.id;
+    } else {
+      // Create new conversation
+      const { data: newConv, error: convError } = await supabaseAdmin
+        .from('whatsapp_conversations')
+        .insert({
+          phone_number: phoneNumber,
+          customer_name: profileName,
+          status: 'active',
+        })
+        .select('id')
+        .single();
+
+      if (convError) {
+        console.error('❌ Error creating conversation:', convError);
+        return;
+      }
+      conversationId = newConv.id;
+    }
+
+    // Save user message to WhatsApp messages table
+    const { error: dbError } = await supabaseAdmin.from('whatsapp_messages').insert({
+      conversation_id: conversationId,
+      message_id: message.id,
+      sender: 'customer',
+      message_type: message.type,
+      content: messageText,
+      media_url: mediaUrl,
+      status: 'received',
+      created_at: new Date(message.timestamp * 1000).toISOString(),
+    });
+
+    if (dbError) {
+      console.error('❌ Database error saving WhatsApp message:', dbError);
+    } else {
+      console.log('✅ WhatsApp message saved to database');
+    }
+
+    // Also save to old conversations table for chatbot compatibility
+    await supabaseAdmin.from('conversations').insert({
       session_id: sessionId,
       channel: 'whatsapp',
       whatsapp_message_id: message.id,
@@ -174,12 +221,6 @@ async function handleIncomingMessage(message: any, contact: any) {
       media_type: mediaType,
       created_at: new Date(message.timestamp * 1000).toISOString(),
     });
-
-    if (dbError) {
-      console.error('❌ Database error saving WhatsApp message:', dbError);
-    } else {
-      console.log('✅ WhatsApp message saved to database');
-    }
 
     // Don't send automated responses to media-only messages without text
     if (message.type !== 'text' && !message[message.type]?.caption) {
@@ -214,7 +255,17 @@ async function handleIncomingMessage(message: any, contact: any) {
           if (result.success) {
             console.log('✅ Bot response sent via WhatsApp');
 
-            // Save bot response to database
+            // Save bot response to WhatsApp messages table
+            await supabaseAdmin.from('whatsapp_messages').insert({
+              conversation_id: conversationId,
+              message_id: result.messageId,
+              sender: 'business',
+              message_type: 'text',
+              content: botReply,
+              status: 'sent',
+            });
+
+            // Also save to old conversations table for compatibility
             await supabaseAdmin.from('conversations').insert({
               session_id: sessionId,
               channel: 'whatsapp',
