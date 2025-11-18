@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create booking in Supabase
-    // Don't generate ticket_id here - let the database trigger handle it when status = confirmed
+    // Auto-confirm bookings from website and let trigger handle ticket generation
     const bookingData = {
       user_id: user.id,
       customer_email: user.email || '',
@@ -105,9 +105,9 @@ export async function POST(request: NextRequest) {
       hotel_name: body.hotel_name,
       notes: body.notes,
       channel: 'website',
-      status: 'pending',
+      status: 'confirmed', // Auto-confirm website bookings to trigger ticket generation
       created_at: new Date().toISOString(),
-      // ticket_id will be generated automatically by n8n workflow when status = confirmed
+      // ticket_id will be generated automatically by n8n workflow via database trigger
     };
 
     const { data, error } = await supabase
