@@ -255,7 +255,10 @@ export default function BookingForm({ onSuccess, tourId }: BookingFormProps) {
             min="1"
             max="10"
             value={formData.adults}
-            onChange={(e) => handleParticipantsChange(parseInt(e.target.value) || 1, formData.children || 0)}
+            onChange={(e) => {
+              const value = e.target.value === '' ? 1 : parseInt(e.target.value);
+              handleParticipantsChange(value, formData.children || 0);
+            }}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 bg-white"
             required
           />
