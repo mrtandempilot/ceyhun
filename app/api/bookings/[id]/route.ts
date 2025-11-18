@@ -40,6 +40,35 @@ export async function PATCH(
       }
     }
 
+    // Send customer confirmation email when booking is confirmed
+    if (status === 'confirmed' && data.customer_email) {
+      try {
+        console.log('📧 Sending confirmation email to customer:', data.customer_email);
+        const { sendEmailNotification, EmailTemplates } = await import('@/lib/email');
+        
+        const emailData = {
+          customer_name: data.customer_name,
+          tour_name: data.tour_name,
+          total_amount: data.total_amount,
+          booking_date: data.booking_date,
+          customer_email: data.customer_email,
+          customer_phone: data.customer_phone || '',
+          tour_start_time: data.tour_start_time,
+          adults: data.adults,
+          children: data.children || 0
+        };
+
+        const customerConfirmation = EmailTemplates.customerBookingConfirmation(emailData);
+        customerConfirmation.to = data.customer_email;
+        await sendEmailNotification(customerConfirmation);
+
+        console.log('✅ Confirmation email sent to customer');
+      } catch (emailError: any) {
+        console.error('❌ Failed to send confirmation email:', emailError);
+        // Don't fail the update if email fails
+      }
+    }
+
     return NextResponse.json(data);
   } catch (error: any) {
     console.error('Error updating booking:', error);
