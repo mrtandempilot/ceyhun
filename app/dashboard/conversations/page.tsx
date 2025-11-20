@@ -429,8 +429,6 @@ export default function ConversationsPage() {
               </>
             ) : null}
           </div>
-        </div>
-
         )}
       </div>
     </div>
