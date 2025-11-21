@@ -7,26 +7,33 @@ import { Tour } from "@/types/tour";
 import Image from "next/image";
 
 const categoryColors: { [key: string]: string } = {
-  Sky: "from-blue-400 to-blue-600",
-  Water: "from-cyan-400 to-cyan-600",
-  Land: "from-green-400 to-green-600"
+  Sky: "from-indigo-500 via-purple-500 to-pink-500",
+  Water: "from-cyan-500 via-teal-500 to-emerald-500",
+  Land: "from-amber-500 via-orange-500 to-red-500"
 };
 
 const categoryButtonColors: { [key: string]: string } = {
-  Sky: "bg-blue-600 hover:bg-blue-700",
-  Water: "bg-cyan-600 hover:bg-cyan-700",
-  Land: "bg-green-600 hover:bg-green-700"
+  Sky: "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700",
+  Water: "bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700",
+  Land: "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
 };
 
 const categoryPriceColors: { [key: string]: string } = {
-  Sky: "text-blue-600",
-  Water: "text-cyan-600",
-  Land: "text-green-600"
+  Sky: "bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent",
+  Water: "bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent",
+  Land: "bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"
 };
 
 export default function Home() {
   const [featuredTours, setFeaturedTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     async function fetchFeaturedTours() {
@@ -57,88 +64,127 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative h-[600px] bg-gradient-to-r from-blue-500 to-blue-700 text-white overflow-hidden">
-        <Image 
-          src="/images/mali.jpg"
-          alt="Beautiful turquoise bay with sailboat"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-black opacity-30"></div>
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Hero Section with Parallax */}
+      <section className="relative h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white overflow-hidden">
+        <div 
+          className="absolute inset-0 transition-transform duration-100"
+          style={{ transform: `translateY(${scrollY * 0.5}px)` }}
+        >
+          <Image 
+            src="/images/mali.jpg"
+            alt="Beautiful turquoise bay with sailboat"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/70 via-purple-900/60 to-pink-900/70"></div>
+        </div>
+        
+        {/* Animated gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/20 to-transparent animate-shimmer"></div>
+        
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-          <div className="max-w-3xl">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              Discover Paradise in Oludeniz
+          <div className="max-w-4xl animate-fade-in-up">
+            <div className="inline-block mb-6 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 animate-fade-in">
+              <span className="text-sm font-semibold tracking-wide">✨ Premium Adventure Experiences</span>
+            </div>
+            <h1 className="text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight">
+              <span className="block bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent animate-gradient">
+                Discover
+              </span>
+              <span className="block mt-2">Paradise</span>
             </h1>
-            <p className="text-xl md:text-2xl mb-8">
-              Experience unforgettable paragliding and adventure tours
+            <p className="text-xl md:text-2xl lg:text-3xl mb-10 text-purple-100 font-light leading-relaxed max-w-2xl">
+              Experience unforgettable paragliding and adventure tours in the breathtaking beauty of Oludeniz
             </p>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-delay">
               <Link
                 href="/tours"
-                className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+                className="group relative bg-white text-purple-900 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-purple-50 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-xl overflow-hidden"
               >
-                View All Tours
+                <span className="relative z-10">Explore Tours</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
               </Link>
               <Link
                 href="/contact"
-                className="border-2 border-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition"
+                className="group relative border-2 border-white/40 bg-white/10 backdrop-blur-sm px-10 py-4 rounded-2xl font-bold text-lg hover:bg-white/20 hover:border-white transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-2xl"
               >
-                Contact Us
+                <span className="relative z-10">Get in Touch</span>
               </Link>
             </div>
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 border-2 border-white/40 rounded-full flex justify-center">
+            <div className="w-1 h-3 bg-white rounded-full mt-2 animate-scroll"></div>
           </div>
         </div>
       </section>
 
       {/* Featured Tours Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Featured Tours
-          </h2>
+      <section className="py-24 bg-gradient-to-b from-white via-purple-50/30 to-white relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-300/20 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-pink-300/20 rounded-full blur-3xl animate-float-delay"></div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-16 animate-fade-in-up">
+            <span className="inline-block px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full text-purple-800 font-semibold text-sm mb-4">
+              Featured Adventures
+            </span>
+            <h2 className="text-5xl md:text-6xl font-black mb-4 bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 bg-clip-text text-transparent">
+              Popular Tours
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Handpicked experiences that our guests love the most
+            </p>
+          </div>
 
           {loading ? (
-            <div className="text-center py-12">
-              <p className="text-xl text-gray-600">Loading...</p>
+            <div className="text-center py-20">
+              <div className="inline-block w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+              <p className="text-xl text-gray-600 mt-4">Loading amazing tours...</p>
             </div>
           ) : featuredTours.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {featuredTours.map((tour) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredTours.map((tour, index) => (
                 <div
                   key={tour.id}
-                  className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition"
+                  className="group bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 animate-fade-in-up"
+                  style={{ animationDelay: `${index * 150}ms` }}
                 >
-                  {tour.image_url ? (
-                    <div className="relative h-48">
+                  <div className="relative h-64 overflow-hidden">
+                    {tour.image_url ? (
                       <Image
                         src={tour.image_url}
                         alt={tour.name}
                         fill
-                        className="object-cover"
+                        className="object-cover group-hover:scale-110 transition-transform duration-700"
                       />
+                    ) : (
+                      <div className={`h-full bg-gradient-to-br ${categoryColors[tour.category] || 'from-indigo-500 via-purple-500 to-pink-500'} group-hover:scale-110 transition-transform duration-700`}></div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute top-4 right-4 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full">
+                      <span className="text-sm font-bold text-gray-800">{tour.category}</span>
                     </div>
-                  ) : (
-                    <div className={`h-48 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
-                  )}
-                  <div className="p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-semibold text-gray-500 uppercase">
-                        {tour.category}
-                      </span>
-                    </div>
-                    <h3 className="text-2xl font-bold mb-3">{tour.name}</h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">{tour.short_description}</p>
-                    <div className="flex justify-between items-center">
-                      <span className={`text-2xl font-bold ${categoryPriceColors[tour.category] || 'text-blue-600'}`}>
-                        {formatPrice(tour)}
-                      </span>
+                  </div>
+                  <div className="p-8">
+                    <h3 className="text-2xl font-bold mb-3 group-hover:text-purple-600 transition-colors duration-300">{tour.name}</h3>
+                    <p className="text-gray-600 mb-6 line-clamp-3 leading-relaxed">{tour.short_description}</p>
+                    <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Starting from</p>
+                        <span className={`text-3xl font-black ${categoryPriceColors[tour.category] || 'bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent'}`}>
+                          {formatPrice(tour)}
+                        </span>
+                      </div>
                       <Link
                         href={`/book?tour=${tour.id}`}
-                        className={`${categoryButtonColors[tour.category] || 'bg-blue-600 hover:bg-blue-700'} text-white px-6 py-2 rounded-lg transition`}
+                        className={`${categoryButtonColors[tour.category] || 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'} text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl`}
                       >
                         Book Now
                       </Link>
@@ -148,13 +194,17 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-xl text-gray-600 mb-4">
-                Check out our amazing tour offerings!
+            <div className="text-center py-20 bg-white rounded-3xl shadow-xl">
+              <div className="text-6xl mb-6">🏝️</div>
+              <p className="text-2xl font-bold text-gray-800 mb-4">
+                Amazing Adventures Await!
+              </p>
+              <p className="text-gray-600 mb-8 text-lg">
+                Explore our incredible tour offerings
               </p>
               <Link
                 href="/tours"
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition inline-block"
+                className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-10 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
               >
                 View All Tours
               </Link>
@@ -164,36 +214,192 @@ export default function Home() {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Why Choose Oludeniz Tours?
-          </h2>
+      <section className="py-24 bg-gradient-to-b from-white to-slate-50 relative overflow-hidden">
+        {/* Decorative background */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-0 left-0 w-full h-full" style={{ backgroundImage: 'radial-gradient(circle, #8b5cf6 1px, transparent 1px)', backgroundSize: '50px 50px' }}></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-16 animate-fade-in-up">
+            <span className="inline-block px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full text-purple-800 font-semibold text-sm mb-4">
+              Why Us
+            </span>
+            <h2 className="text-5xl md:text-6xl font-black mb-4 bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 bg-clip-text text-transparent">
+              Your Adventure Partner
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              We're committed to providing unforgettable experiences
+            </p>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="text-5xl mb-4">🏆</div>
-              <h3 className="text-xl font-bold mb-2">Experienced Guides</h3>
-              <p className="text-gray-600">
-                Our professional team has years of experience ensuring your safety and enjoyment.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="text-5xl mb-4">⭐</div>
-              <h3 className="text-xl font-bold mb-2">5-Star Reviews</h3>
-              <p className="text-gray-600">
-                Rated excellent by thousands of satisfied customers from around the world.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="text-5xl mb-4">💰</div>
-              <h3 className="text-xl font-bold mb-2">Best Prices</h3>
-              <p className="text-gray-600">
-                Competitive rates with no hidden fees. Get the best value for your adventure.
-              </p>
-            </div>
+            {[
+              {
+                icon: "🏆",
+                title: "Expert Guides",
+                description: "Certified professionals with years of experience ensuring your safety and creating unforgettable moments.",
+                gradient: "from-amber-400 to-orange-500"
+              },
+              {
+                icon: "⭐",
+                title: "5-Star Rated",
+                description: "Thousands of satisfied adventurers have rated us excellent. Join our community of happy customers.",
+                gradient: "from-purple-400 to-pink-500"
+              },
+              {
+                icon: "💎",
+                title: "Premium Value",
+                description: "Competitive prices with transparent pricing. Experience luxury without breaking the bank.",
+                gradient: "from-cyan-400 to-teal-500"
+              }
+            ].map((feature, index) => (
+              <div
+                key={index}
+                className="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 animate-fade-in-up overflow-hidden"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${feature.gradient} opacity-10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500`}></div>
+                <div className="relative z-10">
+                  <div className="text-6xl mb-6 transform group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
+                  <h3 className="text-2xl font-bold mb-4 group-hover:text-purple-600 transition-colors duration-300">{feature.title}</h3>
+                  <p className="text-gray-600 leading-relaxed text-lg">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
+
+      {/* CTA Section */}
+      <section className="py-24 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <h2 className="text-4xl md:text-5xl font-black mb-6 animate-fade-in-up">
+            Ready for Your Next Adventure?
+          </h2>
+          <p className="text-xl md:text-2xl mb-10 text-purple-100 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+            Book your dream experience today and create memories that last a lifetime
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+            <Link
+              href="/tours"
+              className="bg-white text-purple-900 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-purple-50 transition-all duration-300 transform hover:scale-105 shadow-2xl"
+            >
+              Browse All Tours
+            </Link>
+            <Link
+              href="/contact"
+              className="border-2 border-white bg-white/10 backdrop-blur-sm px-10 py-4 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all duration-300 transform hover:scale-105 shadow-xl"
+            >
+              Contact Us
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <style jsx>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        @keyframes gradient {
+          0%, 100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+        }
+
+        @keyframes scroll {
+          0% {
+            transform: translateY(0);
+            opacity: 0;
+          }
+          40% {
+            opacity: 1;
+          }
+          80% {
+            transform: translateY(20px);
+            opacity: 0;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.8s ease-out forwards;
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.6s ease-out forwards;
+        }
+
+        .animate-fade-in-delay {
+          animation: fade-in-up 0.8s ease-out 0.3s forwards;
+          opacity: 0;
+        }
+
+        .animate-shimmer {
+          animation: shimmer 3s infinite;
+        }
+
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 5s ease infinite;
+        }
+
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+
+        .animate-float-delay {
+          animation: float 8s ease-in-out infinite;
+          animation-delay: 1s;
+        }
+
+        .animate-scroll {
+          animation: scroll 2s ease-in-out infinite;
+        }
+      `}</style>
     </main>
   );
 }
