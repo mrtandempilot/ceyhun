@@ -3,7 +3,8 @@ import { sendEmailNotification, EmailTemplates } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, type } = await request.json();
+    const requestBody = await request.json();
+    const { email, type, subject, message } = requestBody;
 
     if (!email) {
       return NextResponse.json(
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     let success = false;
-    let message = '';
+    let responseMessage = '';
 
     if (type === 'test') {
       // Send a simple test email
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
         `,
         text: 'Email test successful! Your configuration is working.',
       });
-      message = success ? 'Test email sent successfully!' : 'Failed to send test email';
+      responseMessage = success ? 'Test email sent successfully!' : 'Failed to send test email';
     } else if (type === 'booking') {
       // Send a booking confirmation test
       const bookingTemplate = EmailTemplates.bookingNotification({
@@ -44,8 +45,8 @@ export async function POST(request: NextRequest) {
       bookingTemplate.to = email;
 
       success = await sendEmailNotification(bookingTemplate);
-      message = success ? 'Booking notification sent successfully!' : 'Failed to send booking notification';
-    } else if (type === 'confirmation') {
+      responseMessage = success ? 'Booking notification sent successfully!' : 'Failed to send booking notification';
+  } else if (type === 'confirmation') {
       // Send a customer confirmation test
       const confirmationTemplate = EmailTemplates.customerBookingConfirmation({
         customer_name: 'Test Customer',
@@ -59,12 +60,33 @@ export async function POST(request: NextRequest) {
       confirmationTemplate.to = email;
 
       success = await sendEmailNotification(confirmationTemplate);
-      message = success ? 'Customer confirmation sent successfully!' : 'Failed to send customer confirmation';
+      responseMessage = success ? 'Customer confirmation sent successfully!' : 'Failed to send customer confirmation';
+
+  } else if (type === 'custom') {
+      // Send custom email from compose page
+      const customEmail = {
+        to: email,
+        subject: subject || 'Custom Email from Oludeniz Tours',
+        html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <p style="line-height: 1.6; color: #374151;">${(message || '').replace(/\n/g, '<br>')}</p>
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
+              <p>Best regards,</p>
+              <p>Oludeniz Tours Team</p>
+              <p>📞 +90 XXX XXX XX XX • 📧 info@oludeniztours.com</p>
+            </div>
+          </div>
+        </div>`,
+        text: message || 'Custom email from Oludeniz Tours',
+      };
+
+      success = await sendEmailNotification(customEmail);
+      responseMessage = success ? 'Custom email sent successfully!' : 'Failed to send custom email';
     }
 
     return NextResponse.json({
       success,
-      message,
+      message: responseMessage,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
