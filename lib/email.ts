@@ -273,9 +273,56 @@ Please check the payments dashboard for more details.
               </table>
             </div>
 
-            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <h3 style="color: #92400e; margin-top: 0; font-size: 16px;">📱 Your Ticket</h3>
-              <p style="color: #78350f; margin-bottom: 0;">You will receive your digital ticket via WhatsApp shortly. Please keep it with you on the day of your tour.</p>
+            <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h3 style="color: #1e40af; margin-top: 0; font-size: 18px;">🎫 Your Digital Ticket</h3>
+              <div style="background-color: #ffffff; border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid #e5e7eb;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                  <div>
+                    <h4 style="color: #2563eb; font-size: 20px; margin: 0; font-weight: bold;">🪂 Paragliding Tour Ticket</h4>
+                    <p style="color: #6b7280; margin: 0; font-size: 14px;">Sky Walkers Experience</p>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-size: 12px; color: #6b7280;">Ticket ID</div>
+                    <div style="font-family: monospace; font-weight: bold; background-color: #f3f4f6; padding: 5px 10px; border-radius: 4px; display: inline-block;">TK-${Date.now().toString().slice(-6)}</div>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                  <div style="background-color: #f8fafc; padding: 12px; border-radius: 6px;">
+                    <h5 style="color: #374151; margin: 0 0 8px 0; font-size: 14px; font-weight: bold;">Tour Information</h5>
+                    <div style="font-size: 13px; line-height: 1.5;">
+                      <div><strong>Type:</strong> ${data.tour_name}</div>
+                      <div><strong>Date:</strong> ${new Date(data.booking_date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                      <div><strong>Time:</strong> ${data.tour_start_time}</div>
+                      <div><strong>Passengers:</strong> ${data.adults} Adult${data.adults > 1 ? 's' : ''}${data.children > 0 ? ` + ${data.children} Child${data.children > 1 ? 'ren' : ''}` : ''}</div>
+                      <div><strong>Amount:</strong> ₺${data.total_amount}</div>
+                    </div>
+                  </div>
+
+                  <div style="background-color: #f8fafc; padding: 12px; border-radius: 6px;">
+                    <h5 style="color: #374151; margin: 0 0 8px 0; font-size: 14px; font-weight: bold;">Customer Details</h5>
+                    <div style="font-size: 13px; line-height: 1.5;">
+                      <div><strong>Name:</strong> ${data.customer_name}</div>
+                      <div><strong>Phone:</strong> ${data.customer_phone || 'N/A'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="background-color: #fef3c7; border: 1px solid #f59e0b; padding: 12px; border-radius: 6px; margin-top: 15px;">
+                  <h5 style="color: #92400e; margin: 0 0 8px 0; font-size: 14px; font-weight: bold;">✈️ Flight Instructions</h5>
+                  <ul style="font-size: 12px; color: #78350f; margin: 0; padding-left: 20px;">
+                    <li>Arrive 30 minutes before flight time</li>
+                    <li>Wear comfortable clothes and closed shoes</li>
+                    <li>Maximum weight limit: 110 kg (240 lbs)</li>
+                    <li>Bring sunglasses and sunscreen</li>
+                    <li>No heavy meals 2 hours before flight</li>
+                  </ul>
+                </div>
+
+                <div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #e5e7eb;">
+                  <p style="font-size: 12px; color: #6b7280; margin: 0;">Present this ticket at check-in • Thank you for choosing Sky Walkers!</p>
+                </div>
+              </div>
             </div>
 
             <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -284,7 +331,7 @@ Please check the payments dashboard for more details.
                 <li style="margin-bottom: 8px;">Please arrive 15 minutes before your scheduled time</li>
                 <li style="margin-bottom: 8px;">Wear comfortable clothes and closed shoes</li>
                 <li style="margin-bottom: 8px;">Maximum weight limit: 110 kg (240 lbs)</li>
-                <li style="margin-bottom: 8px;">Bring your ticket (we'll send it via WhatsApp)</li>
+                <li style="margin-bottom: 8px;">Bring your ticket (included above)</li>
               </ul>
             </div>
 
@@ -316,13 +363,13 @@ Participants: ${data.adults} Adult${data.adults > 1 ? 's' : ''}${data.children >
 Total Amount: ₺${data.total_amount}
 
 YOUR TICKET:
-You will receive your digital ticket via WhatsApp shortly. Please keep it with you on the day of your tour.
+Your digital ticket is included above. Print it or save it on your mobile device for check-in.
 
 IMPORTANT INFORMATION:
 - Please arrive 15 minutes before your scheduled time
 - Wear comfortable clothes and closed shoes
 - Maximum weight limit: 110 kg (240 lbs)
-- Bring your ticket (we'll send it via WhatsApp)
+- Bring your ticket (included above)
 
 CONTACT US:
 Phone: +90 XXX XXX XX XX
