@@ -449,12 +449,7 @@ export default function AdminBookingsPage() {
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                onClick={() => generateTicket(booking)}
-                                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500 transition"
-                              >
-                                Generate Ticket
-                              </button>
+                              <span className="text-sm text-gray-500">Processing...</span>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
