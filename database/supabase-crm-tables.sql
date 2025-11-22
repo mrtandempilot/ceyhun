@@ -187,6 +187,56 @@ CREATE TABLE IF NOT EXISTS public.communications (
 );
 
 -- ============================================
+-- CONTACT FORM SUBMISSIONS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.contact_submissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL,
+
+    -- Contact details
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+
+    -- Status & handling
+    status TEXT DEFAULT 'new' CHECK (status IN ('new', 'read', 'replied', 'closed', 'spam')),
+    priority TEXT DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+
+    -- Assignment
+    assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    assigned_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+
+    -- Response tracking
+    response TEXT,
+    response_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    response_at TIMESTAMP WITH TIME ZONE,
+
+    -- Follow-up
+    follow_up_required BOOLEAN DEFAULT false,
+    follow_up_date TIMESTAMP WITH TIME ZONE,
+    follow_up_notes TEXT,
+
+    -- Technical
+    ip_address INET,
+    user_agent TEXT,
+    referer_url TEXT,
+
+    -- Source tracking
+    source TEXT DEFAULT 'contact_form', -- contact_form, landing_page, etc
+    campaign_id TEXT, -- For marketing campaigns
+    utm_source TEXT,
+    utm_medium TEXT,
+    utm_campaign TEXT,
+
+    -- Timestamps
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    read_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
 -- CUSTOMER INTERACTIONS TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.customer_interactions (
@@ -278,6 +328,11 @@ CREATE INDEX IF NOT EXISTS idx_reviews_customer ON public.reviews(customer_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_pilot ON public.reviews(pilot_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_status ON public.reviews(status);
 
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_email ON public.contact_submissions(email);
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_status ON public.contact_submissions(status);
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_submitted_at ON public.contact_submissions(submitted_at);
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_priority ON public.contact_submissions(priority);
+
 -- ============================================
 -- TRIGGERS
 -- ============================================
@@ -305,9 +360,14 @@ DROP TRIGGER IF EXISTS reviews_updated_at ON public.reviews;
 CREATE TRIGGER reviews_updated_at BEFORE UPDATE ON public.reviews
 FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+DROP TRIGGER IF EXISTS contact_submissions_updated_at ON public.contact_submissions;
+CREATE TRIGGER contact_submissions_updated_at BEFORE UPDATE ON public.contact_submissions
+FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 -- ============================================
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================
+ALTER TABLE public.contact_submissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pilots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tour_packages ENABLE ROW LEVEL SECURITY;
