@@ -224,6 +224,92 @@ Please check the payments dashboard for more details.
     };
   }
 
+  static customerBookingConfirmation(data: {
+    customer_name: string;
+    tour_name: string;
+    total_amount: number;
+    booking_date: string;
+    tour_start_time?: string;
+    adults?: number;
+    children?: number;
+    customer_phone?: string;
+    ticket_id?: string;
+    qr_code_url?: string;
+  }): EmailNotification {
+    // Use ticket version if we have ticket data, otherwise use simple confirmation
+    if (data.ticket_id && data.qr_code_url && data.tour_start_time && typeof data.adults === 'number' && typeof data.children === 'number') {
+      return this.customerBookingConfirmationWithTicket(data as any);
+    }
+
+    // Simple confirmation without ticket (for when booking is manually confirmed in dashboard)
+    return {
+      to: '', // Will be set by caller
+      subject: `✅ Booking Confirmed - ${data.tour_name}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h1 style="color: #059669; text-align: center; margin-bottom: 30px;">🎉 Booking Confirmed!</h1>
+
+            <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="color: #166534; font-size: 16px; margin-top: 0;">Dear ${data.customer_name},</p>
+              <p style="color: #374151; margin-bottom: 0;">Your booking has been confirmed! Your digital ticket will be sent to you shortly.</p>
+            </div>
+
+            <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h2 style="color: #1e40af; margin-top: 0;">Your Booking Details</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Tour:</td>
+                  <td style="padding: 8px 0; color: #6b7280;">${data.tour_name}</td>
+                </tr>
+                <tr style="background-color: #f9fafb;">
+                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Date:</td>
+                  <td style="padding: 8px 0; color: #6b7280;">${new Date(data.booking_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Total Amount:</td>
+                  <td style="padding: 8px 0; color: #059669; font-weight: bold; font-size: 18px;">₺${data.total_amount}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <h3 style="color: #374151; margin-top: 0; font-size: 16px;">📋 Important Information</h3>
+              <ul style="color: #6b7280; margin: 0; padding-left: 20px;">
+                <li style="margin-bottom: 8px;">Please arrive 15 minutes before your scheduled time</li>
+                <li style="margin-bottom: 8px;">Wear comfortable clothes and closed shoes</li>
+                <li style="margin-bottom: 8px;">Maximum weight limit: 110 kg (240 lbs)</li>
+                <li style="margin-bottom: 8px;">Check your email for your digital ticket</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+              <p style="color: #6b7280; font-size: 14px;">Questions? Contact us:</p>
+              <p style="color: #2563eb; font-weight: bold; margin: 5px 0;">📧 info@oludeniztours.com</p>
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
+              <p>See you soon for an unforgettable paragliding experience! 🪂</p>
+              <p style="margin-top: 10px; font-size: 12px;">This is an automated confirmation from Ölüdeniz Paragliding Tours.</p>
+            </div>
+          </div>
+        </div>
+      `,
+      text: `
+Booking Confirmed!
+
+Dear ${data.customer_name},
+
+Your booking has been confirmed! Your digital ticket will be sent to you shortly.
+
+TOUR: ${data.tour_name}
+DATE: ${new Date(data.booking_date).toLocaleDateString()}
+
+We look forward to seeing you!
+      `.trim(),
+    };
+  }
+
   static customerBookingConfirmationWithTicket(data: {
     customer_name: string;
     tour_name: string;
@@ -313,7 +399,7 @@ Please check the payments dashboard for more details.
                 <div style="margin-top: 15px; padding: 12px; border-radius: 6px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); text-align: center; border: 1px solid #cbd5e1;">
                   <h5 style="color: #334155; margin: 0 0 8px 0; font-size: 14px; font-weight: bold;">📱 Scan for Digital Verification</h5>
                   <div style="background-color: #ffffff; padding: 8px; display: inline-block; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://ceyhun.vercel.app/ticket/TK-${Date.now().toString().slice(-6)}`)}"
+                    <img src="${data.qr_code_url}"
                          alt="Ticket QR Code"
                          style="width: 120px; height: 120px; display: block; margin: 0 auto;" />
                   </div>
