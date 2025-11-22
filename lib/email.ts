@@ -224,7 +224,7 @@ Please check the payments dashboard for more details.
     };
   }
 
-  static customerBookingConfirmation(data: {
+  static customerBookingConfirmationWithTicket(data: {
     customer_name: string;
     tour_name: string;
     total_amount: number;
@@ -233,6 +233,8 @@ Please check the payments dashboard for more details.
     adults: number;
     children: number;
     customer_phone?: string;
+    ticket_id: string;
+    qr_code_url: string;
   }): EmailNotification {
     return {
       to: '', // Will be set by caller
@@ -283,7 +285,7 @@ Please check the payments dashboard for more details.
                   </div>
                   <div style="text-align: right;">
                     <div style="font-size: 12px; color: #6b7280;">Ticket ID</div>
-                    <div style="font-family: monospace; font-weight: bold; background-color: #f3f4f6; padding: 5px 10px; border-radius: 4px; display: inline-block;">TK-${Date.now().toString().slice(-6)}</div>
+                    <div style="font-family: monospace; font-weight: bold; background-color: #f3f4f6; padding: 5px 10px; border-radius: 4px; display: inline-block;">${data.ticket_id}</div>
                   </div>
                 </div>
 

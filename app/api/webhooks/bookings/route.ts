@@ -180,12 +180,37 @@ export async function POST(request: NextRequest) {
       // Continue even if calendar creation fails
     }
 
-    // Send email notification to admin
-    console.log('📧 Attempting to send booking email notification...');
+    // Generate ticket automatically
+    console.log('🎫 Generating ticket for booking...');
+    let ticket;
+    try {
+      // Call the ticket generation API
+      const ticketResponse = await fetch(`${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/api/tickets/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ booking_id: booking.id }),
+      });
+
+      if (ticketResponse.ok) {
+        ticket = await ticketResponse.json();
+        console.log('✅ Ticket generated:', ticket.ticket_id);
+      } else {
+        console.error('❌ Failed to generate ticket');
+      }
+    } catch (ticketError: any) {
+      console.error('❌ Error generating ticket:', ticketError);
+    }
+
+    // Send email notifications
+    console.log('📧 Sending notifications...');
+
     try {
       const { sendEmailNotification, EmailTemplates } = await import('@/lib/email');
-      
-      const emailData = {
+
+      // Send admin booking notification
+      const adminEmailData = {
         customer_name: booking.customer_name,
         tour_name: booking.tour_name,
         total_amount: booking.total_amount,
@@ -194,20 +219,45 @@ export async function POST(request: NextRequest) {
         customer_phone: booking.customer_phone || ''
       };
 
-      const emailNotification = EmailTemplates.bookingNotification(emailData);
-      emailNotification.to = 'faralyaworks@gmail.com';
+      const adminEmailNotification = EmailTemplates.bookingNotification(adminEmailData);
+      adminEmailNotification.to = 'faralyaworks@gmail.com';
 
-      const result = await sendEmailNotification(emailNotification);
-      console.log('📧 Email send result:', result ? 'Success' : 'Failed');
+      const adminResult = await sendEmailNotification(adminEmailNotification);
+      console.log('📧 Admin email result:', adminResult ? 'Success' : 'Failed');
+
+      // Send customer booking confirmation with ticket details
+      if (ticket) {
+        const customerEmailData = {
+          customer_name: booking.customer_name,
+          tour_name: booking.tour_name,
+          total_amount: booking.total_amount,
+          booking_date: booking.booking_date,
+          tour_start_time: booking.tour_start_time,
+          adults: booking.adults,
+          children: booking.children,
+          customer_phone: booking.customer_phone || '',
+          ticket_id: ticket.ticket_id,
+          qr_code_url: ticket.qr_code_url
+        };
+
+        const customerEmailNotification = EmailTemplates.customerBookingConfirmationWithTicket(customerEmailData);
+        customerEmailNotification.to = booking.customer_email;
+
+        const customerResult = await sendEmailNotification(customerEmailNotification);
+        console.log('📧 Customer email result:', customerResult ? 'Success' : 'Failed');
+      } else {
+        console.log('⚠️ Skipping customer email - no ticket generated');
+      }
     } catch (emailError: any) {
-      console.error('📧 Failed to send email notification:', emailError);
+      console.error('📧 Failed to send email notifications:', emailError);
     }
 
     return NextResponse.json({
       success: true,
       booking_id: booking.id,
+      ticket_id: ticket?.ticket_id,
       calendar_event_id: booking.google_calendar_event_id,
-      message: 'Booking created and synced to calendar successfully'
+      message: 'Booking created, ticket generated, and notifications sent successfully'
     });
   } catch (error: any) {
     console.error('❌ Error in booking webhook:', error);
