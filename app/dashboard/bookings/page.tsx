@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import TicketModal from '@/components/TicketModal'; // Import TicketModal
+import ZelloPTT from '@/components/ZelloPTT'; // Import Zello PTT component
 
 interface Booking {
   id: number;
@@ -285,6 +286,9 @@ export default function AdminBookingsPage() {
           <h1 className="text-3xl font-bold text-white">Bookings Management</h1>
           <p className="mt-2 text-gray-400">View and manage all tour bookings</p>
         </div>
+
+        {/* Zello PTT Component */}
+        <ZelloPTT />
 
         {/* Status Filter Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
