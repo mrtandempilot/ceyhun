@@ -308,6 +308,16 @@ Please check the payments dashboard for more details.
                   </div>
                 </div>
 
+                <div style="margin-top: 15px; padding: 12px; border-radius: 6px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); text-align: center; border: 1px solid #cbd5e1;">
+                  <h5 style="color: #334155; margin: 0 0 8px 0; font-size: 14px; font-weight: bold;">📱 Scan for Digital Verification</h5>
+                  <div style="background-color: #ffffff; padding: 8px; display: inline-block; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://ceyhun.vercel.app/ticket/TK-${Date.now().toString().slice(-6)}`)}"
+                         alt="Ticket QR Code"
+                         style="width: 120px; height: 120px; display: block; margin: 0 auto;" />
+                  </div>
+                  <p style="font-size: 11px; color: #64748b; margin: 8px 0 0 0;">Present at check-in for instant verification</p>
+                </div>
+
                 <div style="background-color: #fef3c7; border: 1px solid #f59e0b; padding: 12px; border-radius: 6px; margin-top: 15px;">
                   <h5 style="color: #92400e; margin: 0 0 8px 0; font-size: 14px; font-weight: bold;">✈️ Flight Instructions</h5>
                   <ul style="font-size: 12px; color: #78350f; margin: 0; padding-left: 20px;">
