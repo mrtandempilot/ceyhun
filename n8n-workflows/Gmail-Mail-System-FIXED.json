@@ -1,0 +1,445 @@
+{
+  "name": "Gmail Complete Mail System - FIXED",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "readStatus": "unread"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        48
+      ],
+      "id": "922c81c8-b606-4ce5-9cb8-f3fafbb4e63f",
+      "name": "New Email Trigger"
+    },
+    {
+      "parameters": {
+        "tableId": "email_notifications",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "email_id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "from_address",
+              "fieldValue": "={{ $json.from?.value?.[0]?.address || $json.from }}"
+            },
+            {
+              "fieldId": "subject",
+              "fieldValue": "={{ $json.subject }}"
+            },
+            {
+              "fieldId": "received_at",
+              "fieldValue": "={{ $json.date }}"
+            },
+            {
+              "fieldId": "is_read",
+              "fieldValue": "=false"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        464,
+        48
+      ],
+      "id": "01f69076-0459-415a-85da-44ceff23cdf7",
+      "name": "Store New Email Notification"
+    },
+    {
+      "parameters": {
+        "path": "emails/inbox",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        160,
+        256
+      ],
+      "id": "b9fe534e-68a9-4e86-adce-b2524d163965",
+      "name": "Get Inbox Webhook",
+      "webhookId": "inbox-endpoint"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filters": {
+          "includeSpamTrash": false,
+          "labelIds": [
+            "INBOX"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        464,
+        256
+      ],
+      "id": "c7c0496a-773c-414f-8d22-b18191e33e06",
+      "name": "Fetch Inbox",
+      "webhookId": "9dcb81d3-b5a7-4459-b69d-5652472910d8"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process inbox emails\nconst emails = $input.all();\n\nconst processedEmails = emails.map(item => {\n  const email = item.json;\n  return {\n    id: email.id,\n    threadId: email.threadId,\n    from: email.from?.value?.[0]?.address || email.from || 'Unknown',\n    fromName: email.from?.value?.[0]?.name || '',\n    to: email.to?.value?.[0]?.address || email.to || '',\n    subject: email.subject || '(No Subject)',\n    snippet: email.snippet || '',\n    date: email.date,\n    isRead: !email.labelIds?.includes('UNREAD'),\n    hasAttachment: email.labelIds?.includes('ATTACHMENT') || false,\n    labels: email.labelIds || [],\n    body: email.text || email.html || ''\n  };\n});\n\nreturn [{\n  json: {\n    success: true,\n    type: 'inbox',\n    count: processedEmails.length,\n    emails: processedEmails,\n    fetchedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        256
+      ],
+      "id": "1d581312-40f4-4c36-82d2-a191e1eb9a9f",
+      "name": "Process Inbox Data"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1072,
+        256
+      ],
+      "id": "001b8986-b984-4fb8-bcba-6e038005607b",
+      "name": "Respond Inbox"
+    },
+    {
+      "parameters": {
+        "path": "emails/sent",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        160,
+        448
+      ],
+      "id": "bf8dcc70-7c94-4b2b-9590-d525d4d1af5f",
+      "name": "Get Sent Webhook",
+      "webhookId": "sent-endpoint"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filters": {
+          "includeSpamTrash": false,
+          "labelIds": [
+            "SENT"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        464,
+        448
+      ],
+      "id": "5c4ec9be-42c5-4141-bcf5-786b8c9e4196",
+      "name": "Fetch Sent",
+      "webhookId": "20a95fa1-089f-4241-a6a5-b42be2910b8c"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process sent emails\nconst emails = $input.all();\n\nconst processedEmails = emails.map(item => {\n  const email = item.json;\n  return {\n    id: email.id,\n    threadId: email.threadId,\n    from: email.from?.value?.[0]?.address || email.from || '',\n    to: email.to?.value?.[0]?.address || email.to || 'Unknown',\n    toName: email.to?.value?.[0]?.name || '',\n    subject: email.subject || '(No Subject)',\n    snippet: email.snippet || '',\n    date: email.date,\n    hasAttachment: email.labelIds?.includes('ATTACHMENT') || false,\n    labels: email.labelIds || [],\n    body: email.text || email.html || ''\n  };\n});\n\nreturn [{\n  json: {\n    success: true,\n    type: 'sent',\n    count: processedEmails.length,\n    emails: processedEmails,\n    fetchedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        448
+      ],
+      "id": "c8fed80f-5024-4c48-aec6-87ae03f664a8",
+      "name": "Process Sent Data"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1072,
+        448
+      ],
+      "id": "e4feb961-571a-4777-91f9-be67babe0700",
+      "name": "Respond Sent"
+    },
+    {
+      "parameters": {
+        "path": "emails/all",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        160,
+        656
+      ],
+      "id": "1161885f-8c32-4fb2-a2e5-041bd36e4d29",
+      "name": "Get All Emails Webhook",
+      "webhookId": "all-emails-endpoint"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        464,
+        656
+      ],
+      "id": "25d34e7d-acbb-4316-bda9-bf1cca4f41e4",
+      "name": "Fetch All Inbox",
+      "webhookId": "6e53f60a-5883-485e-82a3-317bae6448ec"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filters": {
+          "labelIds": [
+            "SENT"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        464,
+        816
+      ],
+      "id": "4093eaf1-72cb-4feb-9ff3-6841323ded90",
+      "name": "Fetch All Sent",
+      "webhookId": "76707b50-fa0a-4520-bd4c-a0404675985a"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine inbox and sent\nconst inbox = $('Fetch All Inbox').all();\nconst sent = $('Fetch All Sent').all();\n\nconst processEmail = (email, type) => ({\n  id: email.json.id,\n  threadId: email.json.threadId,\n  type: type,\n  from: email.json.from?.value?.[0]?.address || email.json.from || '',\n  to: email.json.to?.value?.[0]?.address || email.json.to || '',\n  subject: email.json.subject || '(No Subject)',\n  snippet: email.json.snippet || '',\n  date: email.json.date,\n  isRead: !email.json.labelIds?.includes('UNREAD')\n});\n\nconst allEmails = [\n  ...inbox.map(e => processEmail(e, 'inbox')),\n  ...sent.map(e => processEmail(e, 'sent'))\n].sort((a, b) => new Date(b.date) - new Date(a.date));\n\nreturn [{\n  json: {\n    success: true,\n    inboxCount: inbox.length,\n    sentCount: sent.length,\n    totalCount: allEmails.length,\n    emails: allEmails,\n    fetchedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        736
+      ],
+      "id": "cea2cf98-25c9-4037-b0e6-168b5a66ee56",
+      "name": "Combine All Emails"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1072,
+        736
+      ],
+      "id": "205ef4c2-7c97-430c-b2f8-65238e3ecd01",
+      "name": "Respond All Emails"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "New Email Trigger": {
+      "main": [
+        [
+          {
+            "node": "Store New Email Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Inbox Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Inbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Inbox": {
+      "main": [
+        [
+          {
+            "node": "Process Inbox Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Inbox Data": {
+      "main": [
+        [
+          {
+            "node": "Respond Inbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Sent Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Sent": {
+      "main": [
+        [
+          {
+            "node": "Process Sent Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Sent Data": {
+      "main": [
+        [
+          {
+            "node": "Respond Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Emails Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Inbox",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch All Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch All Inbox": {
+      "main": [
+        [
+          {
+            "node": "Combine All Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch All Sent": {
+      "main": [
+        [
+          {
+            "node": "Combine All Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine All Emails": {
+      "main": [
+        [
+          {
+            "node": "Respond All Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "new-fixed-version-001",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
