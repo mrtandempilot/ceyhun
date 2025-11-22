@@ -180,77 +180,12 @@ export async function POST(request: NextRequest) {
       // Continue even if calendar creation fails
     }
 
-    // Generate ticket automatically using direct function call
-    console.log('🎫 Generating ticket for booking...');
-    let ticket;
-    try {
-      // Import ticket generation logic directly
-      const { NextResponse } = await import('next/server');
-      const { supabase } = await import('@/lib/supabase');
-
-      // Fetch booking details
-      const { data: bookingDetails, error: bookingError } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('id', booking.id)
-        .single();
-
-      if (bookingError || !bookingDetails) {
-        console.error('Error fetching booking for ticket:', bookingError);
-      } else {
-        // Generate comprehensive ticket with proper ticket ID
-        const generatedTicketId = bookingDetails.ticket_id || `TICKET-${bookingDetails.id}-${Date.now()}`;
-
-        // Create QR code that links to ticket verification page
-        const ticketUrl = `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/ticket/${generatedTicketId}`;
-
-        ticket = {
-          ticket_id: generatedTicketId,
-          booking_id: bookingDetails.id,
-          customer_name: bookingDetails.customer_name,
-          customer_email: bookingDetails.customer_email,
-          customer_phone: bookingDetails.customer_phone,
-          tour_name: bookingDetails.tour_name,
-          booking_date: bookingDetails.booking_date,
-          tour_start_time: bookingDetails.tour_start_time,
-          duration: bookingDetails.duration,
-          adults: bookingDetails.adults,
-          children: bookingDetails.children,
-          total_amount: bookingDetails.total_amount,
-          hotel_name: bookingDetails.hotel_name,
-          notes: bookingDetails.notes,
-          status: bookingDetails.status,
-          ticket_url: ticketUrl,
-          qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(ticketUrl)}`,
-        };
-
-        // If ticket_id was not present, update the booking with the new ticket_id
-        if (!bookingDetails.ticket_id) {
-          const { error: updateError } = await supabase
-            .from('bookings')
-            .update({ ticket_id: ticket.ticket_id })
-            .eq('id', booking.id);
-
-          if (updateError) {
-            console.error('Error updating booking with ticket_id:', updateError);
-            // Continue without failing the webhook
-          }
-        }
-
-        console.log('✅ Ticket generated:', ticket.ticket_id);
-      }
-    } catch (ticketError: any) {
-      console.error('❌ Error generating ticket:', ticketError);
-    }
-
-    // Send email notifications
-    console.log('📧 Sending notifications...');
-
+    // Send email notification to admin
+    console.log('📧 Attempting to send booking email notification...');
     try {
       const { sendEmailNotification, EmailTemplates } = await import('@/lib/email');
 
-      // Send admin booking notification
-      const adminEmailData = {
+      const emailData = {
         customer_name: booking.customer_name,
         tour_name: booking.tour_name,
         total_amount: booking.total_amount,
@@ -259,45 +194,20 @@ export async function POST(request: NextRequest) {
         customer_phone: booking.customer_phone || ''
       };
 
-      const adminEmailNotification = EmailTemplates.bookingNotification(adminEmailData);
-      adminEmailNotification.to = 'faralyaworks@gmail.com';
+      const emailNotification = EmailTemplates.bookingNotification(emailData);
+      emailNotification.to = 'faralyaworks@gmail.com';
 
-      const adminResult = await sendEmailNotification(adminEmailNotification);
-      console.log('📧 Admin email result:', adminResult ? 'Success' : 'Failed');
-
-      // Send customer booking confirmation with ticket details
-      if (ticket) {
-        const customerEmailData = {
-          customer_name: booking.customer_name,
-          tour_name: booking.tour_name,
-          total_amount: booking.total_amount,
-          booking_date: booking.booking_date,
-          tour_start_time: booking.tour_start_time,
-          adults: booking.adults,
-          children: booking.children,
-          customer_phone: booking.customer_phone || '',
-          ticket_id: ticket.ticket_id,
-          qr_code_url: ticket.qr_code_url
-        };
-
-        const customerEmailNotification = EmailTemplates.customerBookingConfirmationWithTicket(customerEmailData);
-        customerEmailNotification.to = booking.customer_email;
-
-        const customerResult = await sendEmailNotification(customerEmailNotification);
-        console.log('📧 Customer email result:', customerResult ? 'Success' : 'Failed');
-      } else {
-        console.log('⚠️ Skipping customer email - no ticket generated');
-      }
+      const result = await sendEmailNotification(emailNotification);
+      console.log('📧 Email send result:', result ? 'Success' : 'Failed');
     } catch (emailError: any) {
-      console.error('📧 Failed to send email notifications:', emailError);
+      console.error('📧 Failed to send email notification:', emailError);
     }
 
     return NextResponse.json({
       success: true,
       booking_id: booking.id,
-      ticket_id: ticket?.ticket_id,
       calendar_event_id: booking.google_calendar_event_id,
-      message: 'Booking created, ticket generated, and notifications sent successfully'
+      message: 'Booking created and admin notified successfully'
     });
   } catch (error: any) {
     console.error('❌ Error in booking webhook:', error);
