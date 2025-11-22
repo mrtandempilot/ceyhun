@@ -2,35 +2,36 @@ import { supabase } from './supabase';
 
 // Zello Work Server API for sending automated notifications
 export class ZelloNotificationService {
-  private static readonly BASE_URL = 'https://zellowork.io';
-  private static readonly NETWORK_NAME = 'skywalkerspara';
+  private static readonly BASE_URL = 'https://api.zellowork.com';
+  private static readonly NETWORK_NAME = 'skywalkersparagliding'; // Zello network name
 
   /**
    * Send a text message to the operations channel
+   * Using Zello Work Server API v2 format
    */
   static async sendTextMessageToOperations(message: string): Promise<boolean> {
     try {
       const apiKey = process.env.ZELLO_SERVER_API_KEY;
+      const username = process.env.ZELLO_SERVER_USERNAME || 'api'; // Default username for server API
+
       if (!apiKey) {
         console.error('ZELLO_SERVER_API_KEY not configured');
         return false;
       }
 
-      const payload = {
-        key: apiKey,
-        link_source: 'server_api',
-        message: message,
-        channel: 'operations' // Default operations channel
-      };
+      // Zello Work Server API requires specific XML format or form-data
+      // Using form-data as per API documentation
+      const formData = new FormData();
+      formData.append('network', this.NETWORK_NAME);
+      formData.append('channel', 'operations');
+      formData.append('message', message);
+      formData.append('username', username);
+      formData.append('password', apiKey); // API key as password
 
-      // Zello Work Server API endpoint for sending messages
-      const response = await fetch(`${this.BASE_URL}/api/v1/messages/send`, {
+      // Zello Work Server API v2 endpoint
+      const response = await fetch(`${this.BASE_URL}/v2/sendmessage`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(payload)
+        body: formData
       });
 
       if (!response.ok) {
@@ -39,9 +40,9 @@ export class ZelloNotificationService {
         return false;
       }
 
-      const result = await response.json();
+      const result = await response.text();
       console.log('Zello message sent successfully:', result);
-      return true;
+      return result.includes('success') || result.includes('ok');
 
     } catch (error) {
       console.error('Failed to send Zello message:', error);
