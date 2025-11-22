@@ -30,14 +30,14 @@ export default function TicketPage() {
   useEffect(() => {
     async function fetchTicket() {
       try {
-        const { data, error } = await supabase
-          .from('bookings')
-          .select('*')
-          .eq('ticket_id', ticketId)
-          .single();
-
-        if (error) throw error;
+        // Use fetch to call API route instead of direct Supabase (bypasses RLS)
+        const response = await fetch(`/api/tickets/verify/${ticketId}`);
         
+        if (!response.ok) {
+          throw new Error('Ticket not found');
+        }
+        
+        const data = await response.json();
         setTicket(data);
       } catch (err: any) {
         console.error('Error fetching ticket:', err);
