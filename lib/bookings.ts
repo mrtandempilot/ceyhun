@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { Booking, CreateBookingInput } from '@/types/booking';
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from './google-calendar';
 import { getCurrentUser } from './auth';
+import { ZelloNotificationService, formatTimeSlot } from './zello-server';
 
 // Create a new booking and sync to Google Calendar
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
@@ -38,7 +39,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
     // Create Google Calendar event
     try {
       const eventId = await createCalendarEvent(booking);
-      
+
       if (eventId) {
         // Update booking with calendar event ID
         const { error: updateError } = await supabase
@@ -53,6 +54,21 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
     } catch (calendarError) {
       console.error('Failed to create calendar event:', calendarError);
       // Continue even if calendar creation fails
+    }
+
+    // Send Zello notification to pilots
+    try {
+      await ZelloNotificationService.notifyBookingToPilots({
+        customerName: booking.customer_name,
+        tourName: booking.tour_name,
+        bookingDate: booking.booking_date,
+        timeSlot: formatTimeSlot(booking.tour_start_time || '10:00', booking.duration || 30),
+        passengers: booking.adults + (booking.children || 0),
+        contactInfo: booking.customer_phone
+      });
+    } catch (zelloError) {
+      console.error('Failed to send Zello notification:', zelloError);
+      // Continue even if Zello notification fails
     }
 
     return booking;

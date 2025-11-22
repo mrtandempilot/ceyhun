@@ -114,4 +114,44 @@ NEXT_PUBLIC_ZELLO_WEB_URL=https://your-new-network.zellowork.com/
 
 ---
 
-**Ready to Use**: Your Skywalker Zello Work network integration is active and ready for use. Just click "Open Zello" or "Embed Here" in the bookings dashboard to start communicating!
+🎯 **Automatic Booking Notifications: Supabase → Zello**
+
+The system is now configured to automatically send booking alerts to your pilots' Zello operations channel whenever someone books a flight! Here's how it works:
+
+### Features
+- **Auto-Notifications**: New bookings trigger instant Zello alerts to pilots
+- **Rich Details**: Messages include customer name, flight time, tour type, and contact info
+- **Non-Blocking**: Failed notifications don't stop bookings (robust error handling)
+- **Professional Format**: Formatted alerts with emojis for easy reading
+
+### Alert Example
+When a customer books a flight, pilots will receive:
+```
+🎯 NEW BOOKING ALERT
+
+🏃 Customer: John Smith
+🏔️ Tour: Tandem Paragliding
+📅 Date: 2025-12-01
+⏰ Time: 10:00-11:30
+👥 Passengers: 2
+📞 Contact: +90 555 123 4567
+
+Please confirm availability and prepare for the flight.
+```
+
+### Enable the Feature
+The automatic notifications are **already enabled** for all new bookings. No additional setup required!
+
+### Technical Integration
+- **Server API**: Uses Zello Work Server API for automated messaging
+- **Booking Flow**: Integrated into `lib/bookings.ts` createBooking function
+- **Error Handling**: Continues booking process even if Zello fails
+- **API Key**: Stored as `ZELLO_SERVER_API_KEY` in environment variables
+
+### Testing
+Test the integration by:
+1. Making a new booking on your site
+2. Checking if pilots receive the Zello notification
+3. Or visit `/api/zello/notify` directly in browser for a test notification
+
+**Ready to Use**: New bookings will now automatically alert your pilots through Zello! 🎊
