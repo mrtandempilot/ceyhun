@@ -1,5 +1,7 @@
 "use client";
 
+import ContactForm from "@/components/ContactForm";
+
 export default function ContactPage() {
   return (
     <main className="min-h-screen">
@@ -98,6 +100,11 @@ export default function ContactPage() {
                 </li>
               </ul>
             </div>
+          </div>
+
+          {/* Contact Form */}
+          <div className="mb-12">
+            <ContactForm />
           </div>
 
           {/* Call to Action */}
