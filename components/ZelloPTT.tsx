@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 export default function ZelloPTT() {
   const [showEmbedded, setShowEmbedded] = useState(false);
 
-  const zelloUrl = process.env.NEXT_PUBLIC_ZELLO_WEB_URL || 'https://skywalkerspara.zellowork.com/';
+  const zelloUrl = process.env.NEXT_PUBLIC_ZELLO_WEB_URL || 'https://skywalkersparagliding.zellowork.com/';
 
   if (showEmbedded) {
     return (
