@@ -252,7 +252,7 @@ Please check the payments dashboard for more details.
 
             <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
               <p style="color: #166534; font-size: 16px; margin-top: 0;">Dear ${data.customer_name},</p>
-              <p style="color: #374151; margin-bottom: 0;">Your booking has been confirmed! Your digital ticket will be sent to you shortly.</p>
+              <p style="color: #374151; margin-bottom: 0;">Your booking has been confirmed! Your digital ticket is included in your initial confirmation email.</p>
             </div>
 
             <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -300,7 +300,7 @@ Booking Confirmed!
 
 Dear ${data.customer_name},
 
-Your booking has been confirmed! Your digital ticket will be sent to you shortly.
+Your booking has been confirmed! Your digital ticket is included in your initial confirmation email.
 
 TOUR: ${data.tour_name}
 DATE: ${new Date(data.booking_date).toLocaleDateString()}
