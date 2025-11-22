@@ -180,24 +180,64 @@ export async function POST(request: NextRequest) {
       // Continue even if calendar creation fails
     }
 
-    // Generate ticket automatically
+    // Generate ticket automatically using direct function call
     console.log('🎫 Generating ticket for booking...');
     let ticket;
     try {
-      // Call the ticket generation API
-      const ticketResponse = await fetch(`${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/api/tickets/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ booking_id: booking.id }),
-      });
+      // Import ticket generation logic directly
+      const { NextResponse } = await import('next/server');
+      const { supabase } = await import('@/lib/supabase');
 
-      if (ticketResponse.ok) {
-        ticket = await ticketResponse.json();
-        console.log('✅ Ticket generated:', ticket.ticket_id);
+      // Fetch booking details
+      const { data: bookingDetails, error: bookingError } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', booking.id)
+        .single();
+
+      if (bookingError || !bookingDetails) {
+        console.error('Error fetching booking for ticket:', bookingError);
       } else {
-        console.error('❌ Failed to generate ticket');
+        // Generate comprehensive ticket with proper ticket ID
+        const generatedTicketId = bookingDetails.ticket_id || `TICKET-${bookingDetails.id}-${Date.now()}`;
+
+        // Create QR code that links to ticket verification page
+        const ticketUrl = `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/ticket/${generatedTicketId}`;
+
+        ticket = {
+          ticket_id: generatedTicketId,
+          booking_id: bookingDetails.id,
+          customer_name: bookingDetails.customer_name,
+          customer_email: bookingDetails.customer_email,
+          customer_phone: bookingDetails.customer_phone,
+          tour_name: bookingDetails.tour_name,
+          booking_date: bookingDetails.booking_date,
+          tour_start_time: bookingDetails.tour_start_time,
+          duration: bookingDetails.duration,
+          adults: bookingDetails.adults,
+          children: bookingDetails.children,
+          total_amount: bookingDetails.total_amount,
+          hotel_name: bookingDetails.hotel_name,
+          notes: bookingDetails.notes,
+          status: bookingDetails.status,
+          ticket_url: ticketUrl,
+          qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(ticketUrl)}`,
+        };
+
+        // If ticket_id was not present, update the booking with the new ticket_id
+        if (!bookingDetails.ticket_id) {
+          const { error: updateError } = await supabase
+            .from('bookings')
+            .update({ ticket_id: ticket.ticket_id })
+            .eq('id', booking.id);
+
+          if (updateError) {
+            console.error('Error updating booking with ticket_id:', updateError);
+            // Continue without failing the webhook
+          }
+        }
+
+        console.log('✅ Ticket generated:', ticket.ticket_id);
       }
     } catch (ticketError: any) {
       console.error('❌ Error generating ticket:', ticketError);
