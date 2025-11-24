@@ -641,7 +641,7 @@ export async function getUpcomingBookings(limit: number = 5) {
         customer_email,
         tour_name,
         booking_date,
-        booking_time,
+        tour_start_time,
         status,
         total_amount,
         created_at
@@ -649,15 +649,15 @@ export async function getUpcomingBookings(limit: number = 5) {
       .eq('status', 'confirmed')
       .gte('booking_date', now.toISOString().split('T')[0]) // Future dates
       .order('booking_date', { ascending: true })
-      .order('booking_time', { ascending: true })
+      .order('tour_start_time', { ascending: true })
       .limit(limit);
 
     if (error) throw error;
 
     console.log('🔍 Upcoming Bookings: Raw data from database:', bookings);
 
-    // Format the data for display
-    const formattedBookings = bookings?.map((booking: any) => ({
+        // Format the data for display
+        const formattedBookings = bookings?.map((booking: any) => ({
       id: booking.id,
       customer_name: booking.customer_name,
       tour_name: booking.tour_name,
@@ -666,11 +666,11 @@ export async function getUpcomingBookings(limit: number = 5) {
         month: 'short',
         day: 'numeric'
       }),
-      booking_time: booking.booking_time,
+      booking_time: booking.tour_start_time,
       amount: booking.total_amount,
       phone: booking.customer_phone,
       email: booking.customer_email,
-      display_time: booking.booking_time ? booking.booking_time.slice(0, 5) : 'TBD' // Remove seconds
+      display_time: booking.tour_start_time ? booking.tour_start_time.slice(0, 5) : 'TBD' // Remove seconds
     })) || [];
 
     console.log('🔍 Upcoming Bookings: Formatted result:', formattedBookings);
