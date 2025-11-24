@@ -155,28 +155,28 @@ export default function DashboardPage() {
             value={whatsappStats ? whatsappStats.totalMessages : 0}
             maxValue={1000}
             icon="📱"
-            color="bg-green-500"
+            color="bg-cyan-500"
           />
           <AnimatedBarChart
             title="Incoming Contacts"
             value={incomingContacts}
             maxValue={500}
             icon="📞"
-            color="bg-blue-500"
+            color="bg-emerald-500"
           />
           <AnimatedBarChart
             title="Incoming Emails"
             value={incomingEmails}
             maxValue={100}
             icon="📧"
-            color="bg-yellow-500"
+            color="bg-orange-500"
           />
           <AnimatedBarChart
             title="Chat Bot Interactions"
             value={chatBotStats > 0 ? chatBotStats : 1} // Show at least 1 for testing
             maxValue={200}
             icon="🤖"
-            color="bg-purple-500"
+            color="bg-pink-500"
           />
         </div>
 
