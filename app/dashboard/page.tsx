@@ -64,6 +64,8 @@ export default function DashboardPage() {
   const [incomingEmails, setIncomingEmails] = useState(0);
   const [chatBotStats, setChatBotStats] = useState(0);
   const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
+  const [previousBookingsCount, setPreviousBookingsCount] = useState(0);
+  const [newBookingsHighlighted, setNewBookingsHighlighted] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -98,6 +100,13 @@ export default function DashboardPage() {
         setIncomingContacts(contactsData);
         setIncomingEmails(emailsData);
         setChatBotStats(chatBotData);
+
+        // Check for new bookings and highlight them
+        if (upcomingData.length > previousBookingsCount) {
+          setNewBookingsHighlighted(true);
+          setTimeout(() => setNewBookingsHighlighted(false), 5000); // Highlight for 5 seconds
+        }
+        setPreviousBookingsCount(upcomingData.length);
         setUpcomingBookings(upcomingData);
         console.log('🔍 Dashboard data loaded successfully!');
       } catch (error) {
@@ -256,14 +265,22 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Upcoming Bookings - Compact Version */}
-          <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
-            <div className="flex items-center justify-between mb-4">
+          {/* Upcoming Bookings - Interactive & Scrollable */}
+          <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <h3 className="text-lg font-semibold text-white flex items-center">
+                {newBookingsHighlighted && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-600 text-white mr-2 animate-pulse">
+                    NEW
+                  </span>
+                )}
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 Upcoming Bookings
+                <span className="ml-2 text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded-full">
+                  {upcomingBookings.length}
+                </span>
               </h3>
               <a
                 href="/bookings"
@@ -274,50 +291,73 @@ export default function DashboardPage() {
             </div>
 
             {upcomingBookings.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-12 px-4 text-gray-400">
                 <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
                 <p>No upcoming bookings</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {upcomingBookings.slice(0, 5).map((booking: any, index: number) => (
-                  <div key={booking.id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg hover:bg-gray-650 transition">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0">
-                          <span className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
-                            {index + 1}
-                          </span>
+              <div className="max-h-80 overflow-y-auto">
+                <div className="space-y-2 p-4 pt-2">
+                  {upcomingBookings.map((booking: any, index: number) => {
+                    const isNew = index < (upcomingBookings.length - previousBookingsCount);
+                    return (
+                      <div
+                        key={booking.id}
+                        className={`flex items-center justify-between p-3 bg-gray-700 rounded-lg hover:bg-gray-650 transition-all duration-300 ${
+                          isNew && newBookingsHighlighted ? 'ring-2 ring-green-500 bg-green-50/5 animate-pulse' : ''
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0 relative">
+                              {isNew && newBookingsHighlighted && (
+                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                </span>
+                              )}
+                              <span className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
+                                {index + 1}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-white truncate">
+                                  {booking.customer_name}
+                                </p>
+                                {isNew && newBookingsHighlighted && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-600 text-white animate-bounce">
+                                    NEW
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-400">
+                                {booking.tour_name} • {booking.booking_date} at {booking.display_time}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white truncate">
-                            {booking.customer_name}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {booking.tour_name} • {booking.booking_date} at {booking.display_time}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-white">
+                              ${booking.amount?.toLocaleString() || 'TBD'}
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <a
+                              href={`/bookings?booking=${booking.id}`}
+                              className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                            >
+                              View
+                            </a>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-white">
-                          ${booking.amount?.toLocaleString() || 'TBD'}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0">
-                        <a
-                          href={`/bookings?booking=${booking.id}`}
-                          className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                        >
-                          View
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
