@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, MessageCircle, X, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface Message {
   id: string;
@@ -101,9 +102,42 @@ export default function Chatbot() {
     }
   };
 
+  // Save message to database
+  const saveMessageToDatabase = async (message: Message) => {
+    console.log('Attempting to save message:', message, 'to chatbot_conversations');
+    try {
+      const dataToInsert = {
+        session_id: sessionId,
+        customer_email: customerInfo?.email || null,
+        customer_name: customerInfo?.name || null,
+        message: message.text,
+        sender: message.sender === 'user' ? 'user' : 'bot',
+        channel: 'web',
+        visitor_info: {
+          userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : null,
+          timestamp: message.timestamp.toISOString(),
+        },
+      };
+      console.log('Inserting data:', dataToInsert);
+
+      const { data, error } = await supabase
+        .from('chatbot_conversations')
+        .insert([dataToInsert]);
+
+      if (error) {
+        console.error('Error saving message to database:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+      } else {
+        console.log('Message saved successfully:', data);
+      }
+    } catch (error) {
+      console.error('Exception while saving message:', error);
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!inputValue.trim() || isLoading) return;
 
     const userMessage: Message = {
@@ -117,13 +151,16 @@ export default function Chatbot() {
     setInputValue('');
     setIsLoading(true);
 
+    // Save user message to database
+    await saveMessageToDatabase(userMessage);
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: inputValue,
           sessionId: sessionId,
           customerEmail: customerInfo?.email,
@@ -136,7 +173,7 @@ export default function Chatbot() {
       }
 
       const data = await response.json();
-      
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: data.response || 'I received your message. How else can I help you?',
@@ -145,6 +182,9 @@ export default function Chatbot() {
       };
 
       setMessages((prev) => [...prev, botMessage]);
+
+      // Save bot message to database
+      await saveMessageToDatabase(botMessage);
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
@@ -154,6 +194,9 @@ export default function Chatbot() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
+
+      // Save error message to database
+      await saveMessageToDatabase(errorMessage);
     } finally {
       setIsLoading(false);
     }

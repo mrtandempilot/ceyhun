@@ -1,10 +1,10 @@
 import { supabase } from '@/lib/supabase';
-import type { 
-  Customer, 
-  Pilot, 
-  TourPackage, 
-  Communication, 
-  CustomerInteraction, 
+import type {
+  Customer,
+  Pilot,
+  TourPackage,
+  Communication,
+  CustomerInteraction,
   Review,
   DashboardStats,
   BookingPipeline
@@ -19,7 +19,7 @@ export async function getCustomers() {
     .from('customers')
     .select('*')
     .order('created_at', { ascending: false });
-  
+
   if (error) throw error;
 
   // Get all bookings
@@ -31,14 +31,14 @@ export async function getCustomers() {
   const customersWithStats = customers?.map(customer => {
     const customerBookings = bookings?.filter(b => b.customer_email === customer.email) || [];
     const completedBookings = customerBookings.filter(b => b.status === 'completed');
-    
+
     return {
       ...customer,
       total_bookings: customerBookings.length,
       total_spent: completedBookings.reduce((sum, b) => sum + (b.total_amount || 0), 0)
     };
   }) || [];
-  
+
   return customersWithStats as Customer[];
 }
 
@@ -48,7 +48,7 @@ export async function getCustomerById(id: string) {
     .select('*')
     .eq('id', id)
     .single();
-  
+
   if (error) throw error;
   return data as Customer;
 }
@@ -59,7 +59,7 @@ export async function createCustomer(customer: Partial<Customer>) {
     .insert([customer])
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as Customer;
 }
@@ -71,7 +71,7 @@ export async function updateCustomer(id: string, updates: Partial<Customer>) {
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as Customer;
 }
@@ -81,7 +81,7 @@ export async function deleteCustomer(id: string) {
     .from('customers')
     .delete()
     .eq('id', id);
-  
+
   if (error) throw error;
 }
 
@@ -91,7 +91,7 @@ export async function searchCustomers(query: string) {
     .select('*')
     .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`)
     .order('created_at', { ascending: false });
-  
+
   if (error) throw error;
   return data as Customer[];
 }
@@ -105,7 +105,7 @@ export async function getPilots() {
     .from('pilots')
     .select('*')
     .order('first_name');
-  
+
   if (error) throw error;
   return data as Pilot[];
 }
@@ -116,7 +116,7 @@ export async function getActivePilots() {
     .select('*')
     .eq('status', 'active')
     .order('first_name');
-  
+
   if (error) throw error;
   return data as Pilot[];
 }
@@ -127,7 +127,7 @@ export async function getPilotById(id: string) {
     .select('*')
     .eq('id', id)
     .single();
-  
+
   if (error) throw error;
   return data as Pilot;
 }
@@ -138,7 +138,7 @@ export async function createPilot(pilot: Partial<Pilot>) {
     .insert([pilot])
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as Pilot;
 }
@@ -150,7 +150,7 @@ export async function updatePilot(id: string, updates: Partial<Pilot>) {
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as Pilot;
 }
@@ -164,7 +164,7 @@ export async function getTourPackages() {
     .from('tour_packages')
     .select('*')
     .order('name');
-  
+
   if (error) throw error;
   return data as TourPackage[];
 }
@@ -175,7 +175,7 @@ export async function getActiveTourPackages() {
     .select('*')
     .eq('status', 'active')
     .order('name');
-  
+
   if (error) throw error;
   return data as TourPackage[];
 }
@@ -186,7 +186,7 @@ export async function createTourPackage(tourPackage: Partial<TourPackage>) {
     .insert([tourPackage])
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as TourPackage;
 }
@@ -198,7 +198,7 @@ export async function updateTourPackage(id: string, updates: Partial<TourPackage
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as TourPackage;
 }
@@ -213,7 +213,7 @@ export async function getCommunicationsByCustomer(customerId: string) {
     .select('*')
     .eq('customer_id', customerId)
     .order('created_at', { ascending: false });
-  
+
   if (error) throw error;
   return data as Communication[];
 }
@@ -224,7 +224,7 @@ export async function createCommunication(communication: Partial<Communication>)
     .insert([communication])
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as Communication;
 }
@@ -239,7 +239,7 @@ export async function getInteractionsByCustomer(customerId: string) {
     .select('*')
     .eq('customer_id', customerId)
     .order('interaction_date', { ascending: false });
-  
+
   if (error) throw error;
   return data as CustomerInteraction[];
 }
@@ -250,7 +250,7 @@ export async function createInteraction(interaction: Partial<CustomerInteraction
     .insert([interaction])
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as CustomerInteraction;
 }
@@ -262,7 +262,7 @@ export async function updateInteraction(id: string, updates: Partial<CustomerInt
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as CustomerInteraction;
 }
@@ -280,7 +280,7 @@ export async function getReviews() {
       pilots:pilot_id (first_name, last_name)
     `)
     .order('created_at', { ascending: false });
-  
+
   if (error) throw error;
   return data as Review[];
 }
@@ -290,7 +290,7 @@ export async function getPendingReviews() {
     .from('reviews')
     .select('*')
     .order('created_at', { ascending: false });
-  
+
   if (error) throw error;
   return data as Review[];
 }
@@ -302,7 +302,7 @@ export async function updateReview(id: string, updates: Partial<Review>) {
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as Review;
 }
@@ -509,10 +509,115 @@ export async function getWhatsAppStats() {
     return {
       totalConversations: 0,
       activeConversations: 0,
-      totalMessages: 16, // Your actual count from CSV
-      unreadMessages: 16, // All messages "received"
+      totalMessages: 0,
+      unreadMessages: 0,
       lastActivity: null,
       lastActivityFormatted: 'No data available'
     };
+  }
+}
+
+export async function getIncomingContacts() {
+  try {
+    // Count contact submissions from today (primary source now)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const { count: contactSubmissions } = await supabase
+      .from('contact_submissions')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', today.toISOString());
+
+    // Also count new customers and bookings as secondary source
+    const { count: newCustomers } = await supabase
+      .from('customers')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', today.toISOString());
+
+    const { count: newBookings } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', today.toISOString());
+
+    // Total incoming contacts = contact form submissions + new customers + new bookings
+    const total = (contactSubmissions || 0) + (newCustomers || 0) + (newBookings || 0);
+
+    // Only return demo data if there are 0 real contacts
+    return total > 0 ? total : 0;
+  } catch (error) {
+    console.error('Error fetching incoming contacts:', error);
+    return 0; // No demo data - return 0 to avoid continuous alarms
+  }
+}
+
+export async function getIncomingEmails() {
+  try {
+    // Check if incoming_emails table exists (from docs)
+    const { count } = await supabase
+      .from('incoming_emails')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'unread');
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error fetching incoming emails:', error);
+    return 0;
+  }
+}
+
+export async function createContactSubmission(contactData: {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}) {
+  const { data, error } = await supabase
+    .from('contact_submissions')
+    .insert([contactData])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getContactSubmissions() {
+  const { data, error } = await supabase
+    .from('contact_submissions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateContactSubmissionStatus(id: string, status: string) {
+  const { data, error } = await supabase
+    .from('contact_submissions')
+    .update({ status })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getChatBotStats() {
+  try {
+    // Count chatbot conversations from today (separate chatbot_conversations table)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const { count } = await supabase
+      .from('chatbot_conversations')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', today.toISOString());
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error fetching chatbot stats:', error);
+    return 0; // Return 0 when table doesn't exist
   }
 }
