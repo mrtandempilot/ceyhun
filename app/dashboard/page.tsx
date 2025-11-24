@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { getDashboardStats, getBookingPipeline } from '@/lib/crm';
+import { getDashboardStats, getBookingPipeline, getWhatsAppStats } from '@/lib/crm';
 import type { DashboardStats, BookingPipeline } from '@/types/crm';
 
 export default function DashboardPage() {
@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [pipeline, setPipeline] = useState<BookingPipeline | null>(null);
+  const [whatsappStats, setWhatsappStats] = useState<any>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -33,16 +34,19 @@ export default function DashboardPage() {
         }
 
         console.log('🔍 Fetching dashboard stats and pipeline...');
-        const [dashboardStats, bookingPipeline] = await Promise.all([
+        const [dashboardStats, bookingPipeline, whatsAppData] = await Promise.all([
           getDashboardStats(),
-          getBookingPipeline()
+          getBookingPipeline(),
+          getWhatsAppStats()
         ]);
 
         console.log('🔍 Dashboard stats:', dashboardStats);
         console.log('🔍 Booking pipeline:', bookingPipeline);
+        console.log('🔍 WhatsApp stats:', whatsAppData);
 
         setStats(dashboardStats);
         setPipeline(bookingPipeline);
+        setWhatsappStats(whatsAppData);
         console.log('🔍 Dashboard data loaded successfully!');
       } catch (error) {
         console.error('❌ Error loading dashboard:', error);
@@ -160,20 +164,20 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                     <span className="text-sm text-gray-300">Active Chats</span>
-                    <span className="font-semibold text-white ml-1">5</span>
+                    <span className="font-semibold text-white ml-1">{whatsappStats.activeConversations}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                     <span className="text-sm text-gray-300">Unread Messages</span>
-                    <span className="font-semibold text-white ml-1">12</span>
+                    <span className="font-semibold text-white ml-1">{whatsappStats.unreadMessages}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                     <span className="text-sm text-gray-300">Total Messages</span>
-                    <span className="font-semibold text-white ml-1">248</span>
+                    <span className="font-semibold text-white ml-1">{whatsappStats.totalMessages}</span>
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-gray-500">Last activity: 2 minutes ago</p>
+                <p className="mt-3 text-xs text-gray-500">{whatsappStats.lastActivityFormatted}</p>
               </div>
               <div className="ml-4">
                 <a
