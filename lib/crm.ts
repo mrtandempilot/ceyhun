@@ -637,16 +637,14 @@ export async function getUpcomingBookings(limit: number = 5) {
       .select(`
         id,
         customer_name,
+        customer_phone,
+        customer_email,
         tour_name,
         booking_date,
         booking_time,
         status,
         total_amount,
-        created_at,
-        customers:customer_id (
-          phone,
-          email
-        )
+        created_at
       `)
       .eq('status', 'confirmed')
       .gte('booking_date', now.toISOString().split('T')[0]) // Future dates
@@ -670,8 +668,8 @@ export async function getUpcomingBookings(limit: number = 5) {
       }),
       booking_time: booking.booking_time,
       amount: booking.total_amount,
-      phone: booking.customers?.phone,
-      email: booking.customers?.email,
+      phone: booking.customer_phone,
+      email: booking.customer_email,
       display_time: booking.booking_time ? booking.booking_time.slice(0, 5) : 'TBD' // Remove seconds
     })) || [];
 
