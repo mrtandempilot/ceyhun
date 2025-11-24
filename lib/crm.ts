@@ -621,3 +621,59 @@ export async function getChatBotStats() {
     return 0; // Return 0 when table doesn't exist
   }
 }
+
+// ============================================
+// UPCOMING BOOKINGS
+// ============================================
+
+export async function getUpcomingBookings(limit: number = 5) {
+  try {
+    const now = new Date();
+
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select(`
+        id,
+        customer_name,
+        tour_name,
+        booking_date,
+        booking_time,
+        status,
+        total_amount,
+        created_at,
+        customers:customer_id (
+          phone,
+          email
+        )
+      `)
+      .eq('status', 'confirmed')
+      .gte('booking_date', now.toISOString().split('T')[0]) // Future dates
+      .order('booking_date', { ascending: true })
+      .order('booking_time', { ascending: true })
+      .limit(limit);
+
+    if (error) throw error;
+
+    // Format the data for display
+    const formattedBookings = bookings?.map((booking: any) => ({
+      id: booking.id,
+      customer_name: booking.customer_name,
+      tour_name: booking.tour_name,
+      booking_date: new Date(booking.booking_date).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      }),
+      booking_time: booking.booking_time,
+      amount: booking.total_amount,
+      phone: booking.customers?.phone,
+      email: booking.customers?.email,
+      display_time: booking.booking_time ? booking.booking_time.slice(0, 5) : 'TBD' // Remove seconds
+    })) || [];
+
+    return formattedBookings;
+  } catch (error) {
+    console.error('Error fetching upcoming bookings:', error);
+    return [];
+  }
+}

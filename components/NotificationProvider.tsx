@@ -58,8 +58,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             setIsSubscribed(status === 'SUBSCRIBED');
           });
 
-        // Store channel for cleanup
+        // Listen for real-time WhatsApp message updates
+        const whatsappChannel = supabase
+          .channel('whatsapp_notifications')
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'whatsapp_messages',
+            filter: `sender=eq.customer`
+          }, (payload) => {
+            console.log('🔔 New WhatsApp message received:', payload.new);
+            handleNewWhatsAppMessage(payload.new);
+          })
+          .subscribe();
+
+        // Store channels for cleanup
         (window as any).__notificationChannel = channel;
+        (window as any).__whatsappChannel = whatsappChannel;
       } else {
         console.log('🔔 Skipping real-time setup - not admin user');
       }
@@ -80,15 +95,73 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     window.addEventListener('test-booking', handleTestEvent);
 
+    // Add a global test function for voice
+    (window as any).testVoice = () => {
+      console.log('🗣️ Testing voice manually...');
+      speakText("Voice test activated");
+    };
+
+    // Add test for WhatsApp notification
+    (window as any).testWhatsAppNotification = () => {
+      console.log('🔔 Testing WhatsApp notification manually...');
+      handleNewWhatsAppMessage({
+        id: 'test',
+        sender: 'customer',
+        content: 'This is a test message',
+        message_type: 'text',
+        created_at: new Date().toISOString()
+      });
+    };
+
     return () => {
       console.log('🔔 Cleaning up subscription...');
       const channel = (window as any).__notificationChannel;
       if (channel) {
         supabase.removeChannel(channel);
       }
+      const whatsappChannel = (window as any).__whatsappChannel;
+      if (whatsappChannel) {
+        supabase.removeChannel(whatsappChannel);
+      }
       window.removeEventListener('test-booking', handleTestEvent);
     };
   }, []);
+
+  const handleNewWhatsAppMessage = (message: any) => {
+    console.log('🔔 handleNewWhatsAppMessage called with:', message);
+    console.log('🔔 Current user:', user);
+
+    // Only show notifications for admin user
+    if (!user || (user.email !== 'mrtandempilot@gmail.com' && user.email !== 'faralyaworks@gmail.com')) {
+      console.log('🔔 Skipping notification - not admin user or user not loaded');
+      return;
+    }
+
+    // Skip if it's not a customer message
+    if (message.sender !== 'customer') return;
+
+    console.log('🔔 Creating notification for admin user');
+
+    const notification = {
+      type: 'alert' as const,
+      title: '📱 New WhatsApp Message',
+      message: `From: ${message.sender} - ${message.content.substring(0, 50)}...`,
+      priority: 'medium' as const,
+      actionUrl: `/dashboard/conversations`,
+      data: message
+    };
+
+    addNotification(notification);
+
+    // Browser notification
+    showBrowserNotification(notification);
+
+    // Play sound (optional)
+    playNotificationSound();
+
+    // Speak the notification
+    speakText("New WhatsApp message");
+  };
 
   const handleNewBooking = async (booking: any) => {
     console.log('🔔 handleNewBooking called with:', booking);
@@ -250,6 +323,72 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       oscillator.stop(audioContext.currentTime + 0.2);
     } catch (error) {
       // Silently fail if audio context not supported
+    }
+  };
+
+  const speakText = (text: string) => {
+    console.log('🗣️ Attempting to speak:', text);
+
+    // Check if speech synthesis is available
+    if (!('speechSynthesis' in window)) {
+      console.error('🗣️ Speech synthesis not supported in this browser');
+      alert('Speech synthesis not supported in this browser');
+      return;
+    }
+
+    try {
+      // Get available voices (this can help with debugging)
+      const voices = speechSynthesis.getVoices();
+      console.log('🗣️ Available voices:', voices.length, voices.map(v => v.name));
+
+      // Create utterance
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.volume = 1.0; // Full volume
+      utterance.rate = 0.8; // Slightly slower
+      utterance.pitch = 1.0;
+      utterance.lang = 'en-US'; // Explicitly set language
+
+      // If voices are available, use the first one
+      if (voices.length > 0) {
+        utterance.voice = voices[0];
+        console.log('🗣️ Using voice:', voices[0].name);
+      }
+
+      utterance.onstart = () => console.log('🗣️ Speech synthesis started successfully');
+      utterance.onend = () => console.log('🗣️ Speech synthesis completed');
+      utterance.onerror = (event) => {
+        console.error('🗣️ Speech synthesis error:', event);
+        alert('Speech synthesis failed: ' + event.error);
+      };
+
+      // Check if already speaking and cancel first
+      if (speechSynthesis.speaking) {
+        console.log('🗣️ Cancelling previous speech...');
+        speechSynthesis.cancel();
+      }
+
+      console.log('🗣️ Starting speech synthesis...');
+      speechSynthesis.speak(utterance);
+
+      // Fallback: if speech doesn't start after 2 seconds, try again with alert
+      setTimeout(() => {
+        if (!speechSynthesis.speaking) {
+          console.warn('🗣️ Speech did not start, trying fallback...');
+          try {
+            speechSynthesis.cancel();
+            speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+          } catch (e) {
+            console.error('🗣️ Fallback failed:', e);
+            // Last resort: show alert
+            alert('VOICE ALERT: New WhatsApp message! (Speech synthesis failed)');
+          }
+        }
+      }, 2000);
+
+    } catch (error) {
+      console.error('🗣️ Critical speech error:', error);
+      // Emergency alert fallback
+      alert('VOICE ALERT: New WhatsApp message! (Critical speech error)');
     }
   };
 

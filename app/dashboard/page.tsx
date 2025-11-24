@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { getDashboardStats, getBookingPipeline, getWhatsAppStats, getIncomingContacts, getIncomingEmails, getChatBotStats } from '@/lib/crm';
+import { getDashboardStats, getBookingPipeline, getWhatsAppStats, getIncomingContacts, getIncomingEmails, getChatBotStats, getUpcomingBookings } from '@/lib/crm';
 import type { DashboardStats, BookingPipeline } from '@/types/crm';
 
 // Simple animated bar chart component
@@ -63,6 +63,7 @@ export default function DashboardPage() {
   const [incomingContacts, setIncomingContacts] = useState(0);
   const [incomingEmails, setIncomingEmails] = useState(0);
   const [chatBotStats, setChatBotStats] = useState(0);
+  const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -73,13 +74,14 @@ export default function DashboardPage() {
         console.log('🔍 Running in local development mode - skipping auth');
 
         console.log('🔍 Fetching dashboard stats and pipeline...');
-        const [dashboardStats, bookingPipeline, whatsAppData, contactsData, emailsData, chatBotData] = await Promise.all([
+        const [dashboardStats, bookingPipeline, whatsAppData, contactsData, emailsData, chatBotData, upcomingData] = await Promise.all([
           getDashboardStats(),
           getBookingPipeline(),
           getWhatsAppStats(),
           getIncomingContacts(),
           getIncomingEmails(),
-          getChatBotStats()
+          getChatBotStats(),
+          getUpcomingBookings(5)
         ]);
 
         console.log('🔍 Dashboard stats:', dashboardStats);
@@ -88,6 +90,7 @@ export default function DashboardPage() {
         console.log('🔍 Incoming contacts:', contactsData);
         console.log('🔍 Incoming emails:', emailsData);
         console.log('🔍 Chat bot stats:', chatBotData);
+        console.log('🔍 Upcoming bookings:', upcomingData);
 
         setStats(dashboardStats);
         setPipeline(bookingPipeline);
@@ -95,6 +98,7 @@ export default function DashboardPage() {
         setIncomingContacts(contactsData);
         setIncomingEmails(emailsData);
         setChatBotStats(chatBotData);
+        setUpcomingBookings(upcomingData);
         console.log('🔍 Dashboard data loaded successfully!');
       } catch (error) {
         console.error('❌ Error loading dashboard:', error);
@@ -325,8 +329,90 @@ export default function DashboardPage() {
               </svg>
               Dispatch Center
             </a>
+            <button
+              onClick={() => {
+                // Test WhatsApp notification with voice
+                if (window && (window as any).testWhatsAppNotification) {
+                  (window as any).testWhatsAppNotification();
+                } else {
+                  alert('Test function not loaded yet. Try refreshing the page.');
+                }
+              }}
+              className="flex items-center justify-center px-4 py-3 border border-transparent rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              🗣️ Test Voice Alert
+            </button>
 
           </div>
+        </div>
+
+        {/* Upcoming Bookings */}
+        <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700 mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Upcoming Bookings
+            </h3>
+            <a
+              href="/bookings"
+              className="text-sm text-blue-400 hover:text-blue-300 transition"
+            >
+              View All →
+            </a>
+          </div>
+
+          {upcomingBookings.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              <p>No upcoming bookings</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcomingBookings.map((booking: any, index: number) => (
+                <div key={booking.id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg hover:bg-gray-650 transition">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0">
+                        <span className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">
+                          {booking.customer_name}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {booking.tour_name} • {booking.booking_date} at {booking.display_time}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-white">
+                        ${booking.amount?.toLocaleString() || 'TBD'}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <a
+                        href={`/bookings?booking=${booking.id}`}
+                        className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                      >
+                        View
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
