@@ -630,6 +630,8 @@ export async function getUpcomingBookings(limit: number = 5) {
   try {
     const now = new Date();
 
+    console.log('🔍 Upcoming Bookings: Current date filter:', now.toISOString().split('T')[0]);
+
     const { data: bookings, error } = await supabase
       .from('bookings')
       .select(`
@@ -654,6 +656,8 @@ export async function getUpcomingBookings(limit: number = 5) {
 
     if (error) throw error;
 
+    console.log('🔍 Upcoming Bookings: Raw data from database:', bookings);
+
     // Format the data for display
     const formattedBookings = bookings?.map((booking: any) => ({
       id: booking.id,
@@ -670,6 +674,8 @@ export async function getUpcomingBookings(limit: number = 5) {
       email: booking.customers?.email,
       display_time: booking.booking_time ? booking.booking_time.slice(0, 5) : 'TBD' // Remove seconds
     })) || [];
+
+    console.log('🔍 Upcoming Bookings: Formatted result:', formattedBookings);
 
     return formattedBookings;
   } catch (error) {
