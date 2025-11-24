@@ -19,11 +19,8 @@ export interface Booking {
   created_at: string;
   updated_at?: string;
   ticket_id?: string; // Add ticket_id to the Booking interface
-  
+
   // Computed fields for compatibility
-  user_name?: string;
-  user_email?: string;
-  participants?: number;
   total_price?: number;
 }
 

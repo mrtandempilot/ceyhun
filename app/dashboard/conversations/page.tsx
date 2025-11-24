@@ -1,31 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageCircle, User, Bot, Calendar, Info, RefreshCw, Search } from 'lucide-react';
+import { MessageCircle, User, Bot, Calendar, Info, RefreshCw, Search, Phone, Check, CheckCircle } from 'lucide-react';
 
-interface Message {
+interface WhatsAppMessage {
   id: string;
-  session_id: string;
-  customer_email: string | null;
-  customer_name: string | null;
-  message: string;
-  sender: 'user' | 'bot';
-  visitor_info: any;
+  conversation_id: string;
+  message_id: string;
+  sender: 'customer' | 'business';
+  message_type: 'text' | 'image' | 'video' | 'document' | 'audio' | 'location';
+  content: string;
+  media_url?: string;
+  status: 'sent' | 'delivered' | 'read' | 'failed' | 'received';
   created_at: string;
 }
 
-interface ConversationSession {
-  sessionId: string;
-  messages: Message[];
-  lastMessage: Message;
+interface WhatsAppConversation {
+  id: string;
+  phone_number: string;
+  customer_name: string | null;
+  customer_email: string | null;
+  status: string;
+  last_message_at: string;
+  created_at: string;
+  lastMessage?: {
+    content: string;
+    sender: string;
+    created_at: string;
+  };
   messageCount: number;
-  visitorInfo: any;
 }
 
 export default function ConversationsPage() {
-  const [sessions, setSessions] = useState<ConversationSession[]>([]);
-  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<WhatsAppConversation[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -33,10 +44,10 @@ export default function ConversationsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/chat');
+      const response = await fetch('/api/conversations/whatsapp');
       if (!response.ok) throw new Error('Failed to fetch conversations');
       const data = await response.json();
-      setSessions(data);
+      setConversations(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -44,22 +55,44 @@ export default function ConversationsPage() {
     }
   };
 
+  const fetchMessages = async (conversationId: string) => {
+    setLoadingMessages(true);
+    try {
+      const response = await fetch(`/api/conversations/whatsapp?conversationId=${conversationId}`);
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      const data = await response.json();
+      setMessages(data);
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
   useEffect(() => {
     fetchConversations();
   }, []);
 
-  const filteredSessions = sessions.filter(session => {
+  useEffect(() => {
+    if (selectedConversationId) {
+      fetchMessages(selectedConversationId);
+    } else {
+      setMessages([]);
+    }
+  }, [selectedConversationId]);
+
+  const filteredConversations = conversations.filter(conv => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
-      session.sessionId.toLowerCase().includes(search) ||
-      session.messages.some(msg => msg.message.toLowerCase().includes(search)) ||
-      (session.visitorInfo && JSON.stringify(session.visitorInfo).toLowerCase().includes(search))
+      conv.phone_number.toLowerCase().includes(search) ||
+      (conv.customer_name && conv.customer_name.toLowerCase().includes(search)) ||
+      (conv.lastMessage && conv.lastMessage.content.toLowerCase().includes(search))
     );
   });
 
-  const selectedConversation = selectedSession 
-    ? sessions.find(s => s.sessionId === selectedSession)
+  const selectedConversation = selectedConversationId
+    ? conversations.find(c => c.id === selectedConversationId)
     : null;
 
   return (
@@ -69,14 +102,14 @@ export default function ConversationsPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
               <MessageCircle className="w-8 h-8" />
-              Chat Conversations
+              WhatsApp Conversations
             </h1>
-            <p className="text-gray-600 mt-1">View and manage chatbot conversations</p>
+            <p className="text-gray-600 mt-1">Manage your WhatsApp customer chats</p>
           </div>
           <button
             onClick={fetchConversations}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -89,59 +122,56 @@ export default function ConversationsPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Sessions List */}
-          <div className="lg:col-span-1 bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Conversations List */}
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-200px)]">
             <div className="p-4 border-b border-gray-200">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search conversations..."
+                  placeholder="Search name or phone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
             </div>
-            <div className="overflow-y-auto max-h-[calc(100vh-280px)]">
+            <div className="overflow-y-auto flex-1">
               {loading ? (
                 <div className="p-8 text-center text-gray-500">
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
                   Loading conversations...
                 </div>
-              ) : filteredSessions.length === 0 ? (
+              ) : filteredConversations.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No conversations found</p>
+                  <p>No WhatsApp conversations found</p>
                 </div>
               ) : (
-                filteredSessions.map((session) => (
+                filteredConversations.map((conv) => (
                   <button
-                    key={session.sessionId}
-                    onClick={() => setSelectedSession(session.sessionId)}
-                    className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                      selectedSession === session.sessionId ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
-                    }`}
+                    key={conv.id}
+                    onClick={() => setSelectedConversationId(conv.id)}
+                    className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${selectedConversationId === conv.id ? 'bg-green-50 border-l-4 border-l-green-600' : ''
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-blue-600 truncate">
-                          {session.messages[0]?.customer_email || `Visitor #${session.sessionId.slice(-6)}`}
-                        </p>
-                        <p className="text-xs text-gray-600 truncate mt-1">
-                          {session.lastMessage.message.substring(0, 50)}
-                          {session.lastMessage.message.length > 50 ? '...' : ''}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(session.lastMessage.created_at).toLocaleDateString()}
-                          </span>
-                          <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
-                            {session.messageCount} messages
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {conv.customer_name || conv.phone_number}
+                          </p>
+                          <span className="text-xs text-gray-500">
+                            {new Date(conv.last_message_at).toLocaleDateString()}
                           </span>
                         </div>
+                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                          {conv.phone_number}
+                        </p>
+                        <p className="text-sm text-gray-600 truncate mt-1">
+                          {conv.lastMessage?.content || 'No messages'}
+                        </p>
                       </div>
                     </div>
                   </button>
@@ -150,128 +180,116 @@ export default function ConversationsPage() {
             </div>
           </div>
 
-          {/* Conversation Details */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200">
+          {/* Chat Area */}
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-200px)]">
             {selectedConversation ? (
               <>
-                <div className="p-4 border-b border-gray-200 bg-gray-50">
-                  <h2 className="text-lg font-semibold text-blue-600">
-                    📧 {selectedConversation.messages[0]?.customer_email || `Visitor #${selectedConversation.sessionId.slice(-6)}`}
-                  </h2>
-                  {selectedConversation.messages[0]?.customer_name && (
-                    <p className="text-sm text-gray-700 mt-1">
-                      {selectedConversation.messages[0].customer_name}
-                    </p>
-                  )}
-                  <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {new Date(selectedConversation.lastMessage.created_at).toLocaleString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="w-4 h-4" />
-                      {selectedConversation.messageCount} messages
-                    </span>
-                  </div>
-                  {selectedConversation.visitorInfo && (
-                    <details className="mt-3">
-                      <summary className="cursor-pointer text-sm text-blue-600 flex items-center gap-1">
-                        <Info className="w-4 h-4" />
-                        Visitor Information
-                      </summary>
-                      <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto">
-                        {JSON.stringify(selectedConversation.visitorInfo, null, 2)}
-                      </pre>
-                    </details>
-                  )}
-                </div>
-                <div className="p-4 overflow-y-auto max-h-[calc(100vh-350px)] space-y-4">
-                  {selectedConversation.messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[80%] rounded-lg p-3 ${
-                          message.sender === 'user'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-900'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          {message.sender === 'user' ? (
-                            <User className="w-4 h-4" />
-                          ) : (
-                            <Bot className="w-4 h-4" />
-                          )}
-                          <span className="text-xs font-medium">
-                            {message.sender === 'user' ? 'User' : 'Bot'}
-                          </span>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                        <p
-                          className={`text-xs mt-2 ${
-                            message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-                          }`}
-                        >
-                          {new Date(message.created_at).toLocaleString()}
-                        </p>
-                      </div>
+                {/* Chat Header */}
+                <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      {selectedConversation.customer_name || selectedConversation.phone_number}
+                      {selectedConversation.status === 'active' && (
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      )}
+                    </h2>
+                    <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {selectedConversation.phone_number}
+                      </span>
+                      {selectedConversation.customer_email && (
+                        <span>{selectedConversation.customer_email}</span>
+                      )}
                     </div>
-                  ))}
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                  {loadingMessages ? (
+                    <div className="flex justify-center p-8">
+                      <RefreshCw className="w-8 h-8 animate-spin text-gray-500" />
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="text-center py-12">
+                      <MessageCircle className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                      <p className="text-gray-500">No messages in this conversation</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`rounded-lg p-4 shadow-sm border ${message.sender === 'business'
+                              ? 'bg-green-50 border-green-200'
+                              : 'bg-white border-gray-200'
+                            }`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-medium px-2 py-1 rounded-full ${message.sender === 'business'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                {message.sender === 'business' ? 'You' : 'Customer'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            {message.sender === 'business' && (
+                              <span className="text-blue-500">
+                                {message.status === 'read' ? (
+                                  <div className="flex">
+                                    <Check className="w-3 h-3" />
+                                    <Check className="w-3 h-3 -ml-1" />
+                                  </div>
+                                ) : (
+                                  <Check className="w-3 h-3" />
+                                )}
+                              </span>
+                            )}
+                          </div>
+
+                          {message.media_url && (
+                            <div className="mb-3">
+                              {message.message_type === 'image' ? (
+                                <img src={message.media_url} alt="Shared media" className="rounded-lg max-w-full h-32 object-cover" />
+                              ) : (
+                                <a
+                                  href={message.media_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 underline text-sm flex items-center gap-1"
+                                >
+                                  📎 View {message.message_type}
+                                </a>
+                              )}
+                            </div>
+                          )}
+
+                          <p className="text-sm text-gray-900 whitespace-pre-wrap">{message.content}</p>
+
+                          <div className="mt-2 text-xs text-gray-500">
+                            {message.message_type !== 'text' && (
+                              <span className="capitalize">{message.message_type}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
-              <div className="h-full flex items-center justify-center p-8 text-gray-500">
+              <div className="h-full flex items-center justify-center p-8 text-gray-500 bg-[#f0f2f5]">
                 <div className="text-center">
-                  <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg">Select a conversation to view details</p>
+                  <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p className="text-lg">Select a conversation to start chatting</p>
                 </div>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Statistics */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <MessageCircle className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{sessions.length}</p>
-                <p className="text-sm text-gray-600">Total Sessions</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <MessageCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {sessions.reduce((acc, s) => acc + s.messageCount, 0)}
-                </p>
-                <p className="text-sm text-gray-600">Total Messages</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <Calendar className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {sessions.length > 0
-                    ? Math.round(sessions.reduce((acc, s) => acc + s.messageCount, 0) / sessions.length)
-                    : 0}
-                </p>
-                <p className="text-sm text-gray-600">Avg Messages/Session</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

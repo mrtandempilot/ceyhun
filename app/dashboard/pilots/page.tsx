@@ -29,6 +29,9 @@ export default function PilotsPage() {
     emergency_contact_name: '',
     emergency_contact_phone: '',
     notes: '',
+    weight_limit_min: 40,
+    weight_limit_max: 130,
+    skills: 'tandem',
   });
 
   useEffect(() => {
@@ -79,6 +82,9 @@ export default function PilotsPage() {
       emergency_contact_name: '',
       emergency_contact_phone: '',
       notes: '',
+      weight_limit_min: 40,
+      weight_limit_max: 130,
+      skills: 'tandem',
     });
     setEditingPilot(null);
   };
@@ -100,6 +106,9 @@ export default function PilotsPage() {
       emergency_contact_name: pilot.emergency_contact_name || '',
       emergency_contact_phone: pilot.emergency_contact_phone || '',
       notes: pilot.notes || '',
+      weight_limit_min: pilot.weight_limit_min || 40,
+      weight_limit_max: pilot.weight_limit_max || 130,
+      skills: pilot.skills ? pilot.skills.join(', ') : 'tandem',
     });
     setShowForm(true);
   };
@@ -108,10 +117,15 @@ export default function PilotsPage() {
     e.preventDefault();
 
     try {
+      const pilotData = {
+        ...formData,
+        skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean)
+      };
+
       if (editingPilot) {
-        await updatePilot(editingPilot.id, formData);
+        await updatePilot(editingPilot.id, pilotData);
       } else {
-        await createPilot(formData);
+        await createPilot(pilotData);
       }
 
       await loadPilots();
@@ -304,6 +318,49 @@ export default function PilotsPage() {
                 </div>
               </div>
 
+              {/* Auto-Dispatch Settings */}
+              <div className="border-t border-gray-700 pt-6">
+                <h3 className="text-xl font-bold text-white mb-4">Auto-Dispatch Settings</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Min Weight (kg)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.weight_limit_min}
+                      onChange={(e) => setFormData({ ...formData, weight_limit_min: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Max Weight (kg)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.weight_limit_max}
+                      onChange={(e) => setFormData({ ...formData, weight_limit_max: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Skills (comma separated)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="tandem, instructor, acro"
+                      value={formData.skills}
+                      onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Emergency Contact */}
               <div className="border-t border-gray-700 pt-6">
                 <h3 className="text-xl font-bold text-white mb-4">Emergency Contact</h3>
@@ -422,12 +479,11 @@ export default function PilotsPage() {
                         {pilot.license_type} - {pilot.license_number}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          pilot.status === 'active' ? 'bg-green-900 text-green-300' :
+                        <span className={`px-2 py-1 text-xs rounded-full ${pilot.status === 'active' ? 'bg-green-900 text-green-300' :
                           pilot.status === 'on_leave' ? 'bg-yellow-900 text-yellow-300' :
-                          pilot.status === 'suspended' ? 'bg-red-900 text-red-300' :
-                          'bg-gray-700 text-gray-300'
-                        }`}>
+                            pilot.status === 'suspended' ? 'bg-red-900 text-red-300' :
+                              'bg-gray-700 text-gray-300'
+                          }`}>
                           {pilot.status}
                         </span>
                       </td>

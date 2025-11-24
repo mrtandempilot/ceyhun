@@ -10,11 +10,7 @@
 -- Add missing columns to existing bookings table if they don't exist
 -- Note: Add columns without CHECK constraint first
 ALTER TABLE public.bookings 
-ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-ADD COLUMN IF NOT EXISTS user_name TEXT,
-ADD COLUMN IF NOT EXISTS user_email TEXT,
 ADD COLUMN IF NOT EXISTS duration INTEGER DEFAULT 120,
-ADD COLUMN IF NOT EXISTS participants INTEGER DEFAULT 1,
 ADD COLUMN IF NOT EXISTS google_calendar_event_id TEXT,
 ADD COLUMN IF NOT EXISTS notes TEXT,
 ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending',
@@ -36,26 +32,6 @@ BEGIN
         CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled'));
     END IF;
 END $$;
-
--- Update user_name from customer_name if empty
-UPDATE public.bookings 
-SET user_name = customer_name 
-WHERE user_name IS NULL AND customer_name IS NOT NULL;
-
--- Update user_email from customer_email if empty
-UPDATE public.bookings 
-SET user_email = customer_email 
-WHERE user_email IS NULL AND customer_email IS NOT NULL;
-
--- Calculate participants from adults and children
-UPDATE public.bookings 
-SET participants = COALESCE(adults, 0) + COALESCE(children, 0)
-WHERE participants IS NULL OR participants = 1;
-
--- Ensure participants is at least 1
-UPDATE public.bookings 
-SET participants = 1 
-WHERE participants < 1;
 
 -- Wait a moment for the column additions to be committed
 COMMIT;
