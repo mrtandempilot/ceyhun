@@ -302,10 +302,12 @@ export default function DashboardPage() {
                 <div className="space-y-2 p-4 pt-2">
                   {upcomingBookings.map((booking: any, index: number) => {
                     const isNew = index < (upcomingBookings.length - previousBookingsCount);
+                    const isLatest = index === 0; // Latest booking is always at the top
                     return (
                       <div
                         key={booking.id}
                         className={`flex items-center justify-between p-3 bg-gray-700 rounded-lg hover:bg-gray-650 transition-all duration-300 ${
+                          isLatest ? 'ring-2 ring-orange-500 bg-orange-900/20 animate-pulse shadow-lg shadow-orange-500/25' :
                           isNew && newBookingsHighlighted ? 'ring-2 ring-green-500 bg-green-50/5 animate-pulse' : ''
                         }`}
                       >
