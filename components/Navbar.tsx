@@ -66,6 +66,9 @@ export default function Navbar() {
                 <Link href="/dashboard/notifications" className="hover:text-blue-200 transition">
                   Notifications
                 </Link>
+                <Link href="/dashboard/channels" className="hover:text-blue-200 transition">
+                  Channels
+                </Link>
               </>
             )}
             <Link href="/about" className="hover:text-blue-200 transition">
@@ -144,13 +147,29 @@ export default function Navbar() {
               Tours
             </Link>
             {user && user.email === 'mrtandempilot@gmail.com' && (
-              <Link
-                href="/dashboard"
-                className="block py-2 hover:text-blue-200 transition"
-                onClick={() => setIsOpen(false)}
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  className="block py-2 hover:text-blue-200 transition"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/dashboard/notifications"
+                  className="block py-2 hover:text-blue-200 transition"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Notifications
+                </Link>
+                <Link
+                  href="/dashboard/channels"
+                  className="block py-2 hover:text-blue-200 transition"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Channels
+                </Link>
+              </>
             )}
             <Link
               href="/about"

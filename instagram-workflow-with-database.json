@@ -1,0 +1,314 @@
+{
+  "name": "Instagram with Database Saving",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "3b179ad6-64af-4361-a7e1-74e87793dd40",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-640, -64],
+      "id": "15ec3c42-8832-4336-94e4-0c6394e76a5d",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [32, -304],
+      "id": "fc1d6046-56fb-40d5-b5b8-49400b98ee10",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.entry[0].messaging[0].message.text }}",
+        "options": {
+          "systemMessage": "You are a helpful assistant for Skywalkers Tours in Fethiye, Turkey.\n\n📅 Current date: {{ $now() }}\n\n📊 TOUR INFORMATION:\n- Total pilots: 5\n- Maximum capacity per hour: 6 people\n\n🎯 YOUR ROLE:\n- Help customers book tours\n- Answer questions about our 7 tours\n- Provide tour information (prices, times, meeting points)\n- Speak Turkish or English (detect customer's language)\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [224, -160],
+      "id": "e606c2de-1fb2-4070-957c-73b3d7e50bd3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [416, 240],
+      "id": "94739de3-cae6-4ee8-9f02-4eb3e2cad235",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "5vtbLyA68bKwKcxC",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.entry[0].messaging[0].message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "2a9193fe-d2d1-4afd-bb71-209942ef3e70"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [-240, -32],
+      "id": "72b6b1dd-0166-4960-afdc-ddab0652058a",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5bb43088-3775-472c-9930-50f5055b0e50",
+              "leftValue": "={{ $json.body.entry[0].messaging[0].message.is_echo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-32, -32],
+      "id": "4b7bc235-e3d6-4fbc-8ecf-e39225cbc53d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "78798362-e5a6-4849-bd8e-08a73b100437",
+              "name": "reply",
+              "value": "={{ $json.output.toJsonString() }}",
+              "type": "string"
+            },
+            {
+              "id": "a68af9ea-4fdc-4aa6-8eaa-f8343ef3bb8f",
+              "name": "version",
+              "value": "={{ $('If').item.json.headers['instagram-api-version'] }}",
+              "type": "string"
+            },
+            {
+              "id": "909f977b-8301-482d-8c04-8acb9b516cb1",
+              "name": "sender  id",
+              "value": "={{ $('If').item.json.body.entry[0].messaging[0].sender.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [608, -16],
+      "id": "3240d1fc-cdbc-4e42-9471-551aa35cba4c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.instagram.com/{{ $json.version }}/17841477275430202/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\n\"recipient\":{\n\n\"id\":\"{{ $json['sender  id'] }}\"\n\n},\n\n\"message\": {\n\n\"text\":{{ $json.reply }}\n}\n\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [816, -16],
+      "id": "7c39c18c-c3e5-471f-8680-ea53edcefd0f",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "zqcef1JQJP9Vwt6K",
+          "name": "insta token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ceyhun.vercel.app/api/instagram/webhook",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"entry\": [\n    {\n      \"messaging\": [\n        {\n          \"sender\": {\n            \"id\": \"{{ $json.body.entry[0].messaging[0].sender.id }}\"\n          },\n          \"message\": {\n            \"mid\": \"{{ $json.body.entry[0].messaging[0].message.mid }}\",\n            \"text\": \"{{ $json.body.entry[0].messaging[0].message.text }}\",\n            \"is_echo\": false\n          }\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [140, -32],
+      "id": "save-incoming",
+      "name": "Save Incoming Message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ceyhun.vercel.app/api/instagram/response",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"instagram_id\": \"{{ $json.body.entry[0].messaging[0].sender.id }}\",\n  \"message\": \"{{ $json.reply }}\",\n  \"message_id\": \"response_{{ Date.now() }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [690, -32],
+      "id": "save-response",
+      "name": "Save AI Response"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Save Incoming Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Incoming Message": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Save AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save AI Response": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "46fe3cfe-cfe0-4fae-81f2-e6fd8115afef",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8d28a9671075f0b5891a19de3804cee75b0d422edb952b37771a7916cd08431c"
+  },
+  "id": "4YmbkrBLBur9koaZ",
+  "tags": []
+}
