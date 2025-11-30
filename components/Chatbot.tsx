@@ -104,7 +104,7 @@ export default function Chatbot() {
 
   // Save message to database
   const saveMessageToDatabase = async (message: Message) => {
-    console.log('Attempting to save message:', message, 'to chatbot_conversations');
+    console.log('Attempting to save message:', message, 'to conversations');
     try {
       const dataToInsert = {
         session_id: sessionId,
@@ -121,7 +121,7 @@ export default function Chatbot() {
       console.log('Inserting data:', dataToInsert);
 
       const { data, error } = await supabase
-        .from('chatbot_conversations')
+        .from('conversations')
         .insert([dataToInsert]);
 
       if (error) {
