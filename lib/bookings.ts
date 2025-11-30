@@ -3,6 +3,64 @@ import { Booking, CreateBookingInput } from '@/types/booking';
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from './google-calendar';
 import { getCurrentUser } from './auth';
 
+// Check pilot availability for a specific date and time
+export async function checkPilotAvailability(
+  bookingDate: string,
+  tourStartTime: string,
+  requestedPassengers: number
+): Promise<{ available: boolean; availableSeats: number; message?: string }> {
+  try {
+    // Get total active pilots
+    const { data: pilots, error: pilotsError } = await supabase
+      .from('pilots')
+      .select('id')
+      .eq('status', 'active');
+
+    if (pilotsError) {
+      throw new Error('Failed to fetch pilot count');
+    }
+
+    const totalPilots = pilots?.length || 0;
+
+    // Get already booked passengers for this time slot (exclude cancelled bookings)
+    const { data: existingBookings, error: bookingsError } = await supabase
+      .from('bookings')
+      .select('adults, children')
+      .eq('booking_date', bookingDate)
+      .eq('tour_start_time', tourStartTime)
+      .neq('status', 'cancelled');
+
+    if (bookingsError) {
+      throw new Error('Failed to fetch existing bookings');
+    }
+
+    const bookedPassengers = existingBookings?.reduce((total, booking) => {
+      return total + (booking.adults || 0) + (booking.children || 0);
+    }, 0) || 0;
+
+    const availableSeats = totalPilots - bookedPassengers;
+
+    if (requestedPassengers <= availableSeats) {
+      return {
+        available: true,
+        availableSeats: availableSeats
+      };
+    } else {
+      const remaining = requestedPassengers - availableSeats;
+      // Format time nicely (remove seconds if present)
+      const timeFormatted = tourStartTime.includes(':') ? tourStartTime.substring(0, 5) : tourStartTime;
+
+      return {
+        available: false,
+        availableSeats: availableSeats,
+        message: `For the ${timeFormatted} flight, we can take ${availableSeats} passenger${availableSeats !== 1 ? 's' : ''}. The remaining ${remaining} passenger${remaining !== 1 ? 's' : ''} can be scheduled for the next available flight slot.`
+      };
+    }
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to check pilot availability');
+  }
+}
+
 // Create a new booking and sync to Google Calendar
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
   try {
@@ -10,6 +68,18 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
     const user = await getCurrentUser();
     if (!user) {
       throw new Error('User not authenticated');
+    }
+
+    // Check pilot availability before creating booking
+    const requestedPassengers = input.adults + (input.children || 0);
+    const availability = await checkPilotAvailability(
+      input.booking_date,
+      input.tour_start_time,
+      requestedPassengers
+    );
+
+    if (!availability.available) {
+      throw new Error(availability.message || 'Not enough pilot capacity for this time slot');
     }
 
     // Create booking in Supabase
