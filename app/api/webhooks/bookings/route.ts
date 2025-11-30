@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createCalendarEvent } from '@/lib/google-calendar';
+import { checkPilotAvailability } from '@/lib/bookings';
 
 /**
  * POST - Webhook endpoint for n8n to create bookings with calendar sync
@@ -40,6 +41,28 @@ export async function POST(request: NextRequest) {
         { error: 'Missing required fields: customer_email, customer_name, tour_name, booking_date, tour_start_time' },
         { status: 400 }
       );
+    }
+
+    // Check pilot availability before creating booking
+    const requestedPassengers = (adults || 1) + (children || 0);
+    try {
+      const availability = await checkPilotAvailability(
+        booking_date,
+        tour_start_time,
+        requestedPassengers
+      );
+
+      if (!availability.available) {
+        console.log('✅ Capacity check passed for chatbot booking');
+        return NextResponse.json({
+          error: availability.message || 'Not enough pilot capacity for this time slot'
+        }, { status: 400 });
+      }
+    } catch (capacityError: any) {
+      console.error('❌ Error checking pilot capacity:', capacityError);
+      return NextResponse.json({
+        error: 'Unable to verify pilot availability at this time'
+      }, { status: 500 });
     }
 
     // Create or update customer record
