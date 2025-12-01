@@ -78,12 +78,12 @@ export default function Navbar() {
             <Link href="/" className="hover:text-blue-200 transition">
               Home
             </Link>
-            <div className="relative">
-              <button
-                onMouseEnter={() => setToursDropdownOpen(true)}
-                onMouseLeave={() => setToursDropdownOpen(false)}
-                className="hover:text-blue-200 transition flex items-center"
-              >
+            <div
+              className="relative"
+              onMouseEnter={() => setToursDropdownOpen(true)}
+              onMouseLeave={() => setToursDropdownOpen(false)}
+            >
+              <button className="hover:text-blue-200 transition flex items-center">
                 Tours
                 <svg
                   className={`ml-1 h-4 w-4 transition-transform ${toursDropdownOpen ? 'rotate-180' : ''}`}
@@ -95,11 +95,7 @@ export default function Navbar() {
                 </svg>
               </button>
               {toursDropdownOpen && (
-                <div
-                  className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg py-2 min-w-max z-50"
-                  onMouseEnter={() => setToursDropdownOpen(true)}
-                  onMouseLeave={() => setToursDropdownOpen(false)}
-                >
+                <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg py-2 min-w-max z-50">
                   <Link
                     href="/tours"
                     className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
