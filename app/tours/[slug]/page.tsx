@@ -87,6 +87,11 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
     );
   }
 
+  const galleryImages = tour.gallery_urls || [];
+  const getImageSrc = (index: number) => {
+    return galleryImages.length > 0 ? galleryImages[index % galleryImages.length] : tour.image_url;
+  };
+
 
 
   return (
@@ -97,12 +102,12 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
           <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}>
             {/* Slide 1 - First set of 3 images */}
             <div className="min-w-full grid grid-cols-3 gap-0">
-              {tour.image_url ? (
+              {galleryImages.length > 0 || tour.image_url ? (
                 <>
                   <div className="relative h-64 md:h-80">
                     <Image
-                      src={tour.image_url}
-                      alt={`${tour.name} view 1`}
+                      src={getImageSrc(0)}
+                      alt={`${tour.name} gallery view 1`}
                       fill
                       sizes="33vw"
                       className="object-cover"
@@ -110,8 +115,8 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
                   </div>
                   <div className="relative h-64 md:h-80">
                     <Image
-                      src={tour.image_url}
-                      alt={`${tour.name} view 2`}
+                      src={getImageSrc(1)}
+                      alt={`${tour.name} gallery view 2`}
                       fill
                       sizes="33vw"
                       className="object-cover"
@@ -119,8 +124,8 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
                   </div>
                   <div className="relative h-64 md:h-80">
                     <Image
-                      src={tour.image_url}
-                      alt={`${tour.name} view 3`}
+                      src={getImageSrc(2)}
+                      alt={`${tour.name} gallery view 3`}
                       fill
                       sizes="33vw"
                       className="object-cover"
@@ -138,12 +143,12 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
 
             {/* Slide 2 - Second set of 3 images */}
             <div className="min-w-full grid grid-cols-3 gap-0">
-              {tour.image_url ? (
+              {galleryImages.length > 0 || tour.image_url ? (
                 <>
                   <div className="relative h-64 md:h-80">
                     <Image
-                      src={tour.image_url}
-                      alt={`${tour.name} view 4`}
+                      src={getImageSrc(3)}
+                      alt={`${tour.name} gallery view 4`}
                       fill
                       sizes="33vw"
                       className="object-cover"
@@ -151,8 +156,8 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
                   </div>
                   <div className="relative h-64 md:h-80">
                     <Image
-                      src={tour.image_url}
-                      alt={`${tour.name} view 5`}
+                      src={getImageSrc(4)}
+                      alt={`${tour.name} gallery view 5`}
                       fill
                       sizes="33vw"
                       className="object-cover"
@@ -160,8 +165,8 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
                   </div>
                   <div className="relative h-64 md:h-80">
                     <Image
-                      src={tour.image_url}
-                      alt={`${tour.name} view 6`}
+                      src={getImageSrc(5)}
+                      alt={`${tour.name} gallery view 6`}
                       fill
                       sizes="33vw"
                       className="object-cover"
