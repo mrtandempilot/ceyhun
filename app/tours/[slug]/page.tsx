@@ -136,6 +136,51 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
         </div>
       </section>
 
+      {/* Image Gallery Section */}
+      <section className="py-8 bg-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {tour.image_url ? (
+              <>
+                <div className="relative h-64 rounded-lg overflow-hidden">
+                  <Image
+                    src={tour.image_url}
+                    alt={`${tour.name} view 1`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="relative h-64 rounded-lg overflow-hidden">
+                  <Image
+                    src={tour.image_url}
+                    alt={`${tour.name} view 2`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="relative h-64 rounded-lg overflow-hidden">
+                  <Image
+                    src={tour.image_url}
+                    alt={`${tour.name} view 3`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={`h-64 rounded-lg bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                <div className={`h-64 rounded-lg bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                <div className={`h-64 rounded-lg bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Details Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
