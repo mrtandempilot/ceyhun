@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { checkPilotAvailability } from '@/lib/bookings';
 
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://mvt36n7e.rpcld.com/webhook/a487d0ab-c749-4703-9125-93e88642d355/chat';
 
 export async function POST(request: NextRequest) {
   try {
