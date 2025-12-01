@@ -90,6 +90,7 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
   const carouselImages = tour.image_url ? [
     tour.image_url,
     tour.image_url,
+    tour.image_url,
     tour.image_url
   ] : [];
 
