@@ -23,6 +23,8 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
   const [tour, setTour] = useState<Tour | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [adults, setAdults] = useState(1);
 
   useEffect(() => {
     async function fetchTour() {
@@ -90,47 +92,63 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Image Gallery Section */}
+      {/* Image Carousel Section */}
       <section className="pt-16">
-        <div className="max-w-full">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+        <div className="relative max-w-full">
+          <div className="relative h-64 md:h-96 overflow-hidden">
             {tour.image_url ? (
-              <>
-                <div className="relative h-64 md:h-96 overflow-hidden">
+              <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}>
+                <div className="min-w-full h-full relative">
                   <Image
                     src={tour.image_url}
                     alt={`${tour.name} view 1`}
                     fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover hover:scale-110 transition-transform duration-500"
+                    sizes="100vw"
+                    className="object-cover"
                   />
                 </div>
-                <div className="relative h-64 md:h-96 overflow-hidden">
+                <div className="min-w-full h-full relative">
                   <Image
                     src={tour.image_url}
                     alt={`${tour.name} view 2`}
                     fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover hover:scale-110 transition-transform duration-500"
+                    sizes="100vw"
+                    className="object-cover"
                   />
                 </div>
-                <div className="relative h-64 md:h-96 overflow-hidden">
+                <div className="min-w-full h-full relative">
                   <Image
                     src={tour.image_url}
                     alt={`${tour.name} view 3`}
                     fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover hover:scale-110 transition-transform duration-500"
+                    sizes="100vw"
+                    className="object-cover"
                   />
                 </div>
-              </>
+              </div>
             ) : (
-              <>
-                <div className={`h-64 md:h-96 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
-                <div className={`h-64 md:h-96 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
-                <div className={`h-64 md:h-96 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
-              </>
+              <div className={`h-full bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
             )}
+            
+            {/* Navigation Arrows */}
+            <button
+              onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? 2 : prev - 1))}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all z-10"
+              aria-label="Previous image"
+            >
+              <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setCurrentImageIndex((prev) => (prev === 2 ? 0 : prev + 1))}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all z-10"
+              aria-label="Next image"
+            >
+              <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
         </div>
       </section>
@@ -259,55 +277,77 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
               )}
             </div>
 
-            {/* Sidebar Details */}
+            {/* Booking Card */}
             <div className="lg:col-span-1">
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-xl font-semibold mb-6">Tour Details</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <span className="font-medium">Duration:</span>
-                    <p className="text-gray-700">{tour.duration}</p>
+              <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24">
+                {/* Price Display */}
+                <div className="mb-6 pb-6 border-b border-gray-200">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="text-sm text-gray-600">From</span>
                   </div>
-
-                  {tour.start_times && tour.start_times.length > 0 && (
-                    <div>
-                      <span className="font-medium">Start Times:</span>
-                      <div className="text-gray-700">
-                        {tour.start_times.map((time: string, index: number) => (
-                          <div key={index} className="mb-1">{time}</div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {tour.fitness_level && (
-                    <div>
-                      <span className="font-medium">Fitness Level:</span>
-                      <p className="text-gray-700">{tour.fitness_level}</p>
-                    </div>
-                  )}
-
-                  {tour.age_limit && (
-                    <div>
-                      <span className="font-medium">Age Limit:</span>
-                      <p className="text-gray-700">{tour.age_limit}</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <span className="font-medium">Pickup Available:</span>
-                    <p className="text-gray-700">{tour.pickup_available ? 'Yes' : 'No'}</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold text-gray-900">{formatPrice(tour)}</span>
+                    <span className="text-gray-600">/per person</span>
                   </div>
                 </div>
-              </div>
 
-              <div className="mt-6">
+                {/* Booking Form */}
+                <h3 className="text-xl font-bold mb-4 text-center text-gray-900 pb-3 border-b-2 border-blue-600">Booking Form</h3>
+                
+                {/* Check In */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Check in</label>
+                  <input
+                    type="date"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="DD-MM-YYYY"
+                  />
+                </div>
+
+                {/* Guests Counter */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Guests</label>
+                  <div className="flex items-center justify-between p-4 border border-gray-300 rounded-lg">
+                    <span className="font-medium text-gray-900">Adults</span>
+                    <span className="font-semibold text-gray-900 mx-3">{formatPrice(tour)}</span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setAdults(Math.max(1, adults - 1))}
+                        className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 hover:border-blue-600 hover:text-blue-600 transition"
+                      >
+                        −
+                      </button>
+                      <span className="w-8 text-center font-semibold">{adults}</span>
+                      <button
+                        onClick={() => setAdults(adults + 1)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 hover:border-blue-600 hover:text-blue-600 transition"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hotel/Room Number */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Hotel/Room Number</label>
+                  <input
+                    type="text"
+                    placeholder="If you want pick up"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Booking Button */}
                 <Link
-                  href={`/book?tour=${tour.id}`}
-                  className={`w-full ${categoryButtonColors[tour.category] || 'bg-blue-600 hover:bg-blue-700'} text-white px-6 py-3 rounded-lg font-semibold text-lg hover:scale-105 transition block text-center`}
+                  href={`/book?tour=${tour.id}&adults=${adults}`}
+                  className={`w-full ${categoryButtonColors[tour.category] || 'bg-blue-600 hover:bg-blue-700'} text-white px-6 py-4 rounded-lg font-bold text-lg hover:scale-105 transition block text-center shadow-lg`}
                 >
-                  Book This Tour
+                  Booking Now
                 </Link>
               </div>
             </div>
