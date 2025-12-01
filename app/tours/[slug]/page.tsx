@@ -88,14 +88,8 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
 
   return (
     <main className="min-h-screen">
-      {/* Header Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        </div>
-      </section>
-
       {/* Image Gallery Section */}
-      <section className="py-8 bg-gray-100">
+      <section className="pt-20 pb-8 bg-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {tour.image_url ? (
