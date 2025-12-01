@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Tour } from "@/types/tour";
+import BookingForm from "@/components/BookingForm";
 import { notFound } from "next/navigation";
 
 const categoryColors: { [key: string]: string } = {
@@ -24,6 +25,7 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [adults, setAdults] = useState(1);
+  const [showBookingModal, setShowBookingModal] = useState<boolean>(false);
 
   useEffect(() => {
     async function fetchTour() {
