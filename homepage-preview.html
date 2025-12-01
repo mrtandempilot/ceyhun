@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Adventure Tours - Homepage Preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-text-adventure {
+            background: linear-gradient(to right, #22d3ee, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .gradient-text-tours {
+            background: linear-gradient(to right, #facc15, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .tour-card {
+            transition: all 0.3s ease;
+        }
+        
+        .tour-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 25px 50px -12px rgba(34, 211, 238, 0.25);
+        }
+        
+        .favorite-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .favorite-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .favorite-active {
+            fill: #ef4444;
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white">
+    <!-- Header/Navigation (simplified) -->
+    <nav class="bg-slate-800 border-b border-slate-700 py-4 px-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="text-2xl font-bold">🏔️ Adventure Travel</div>
+            <div class="flex gap-6">
+                <a href="#" class="text-gray-300 hover:text-cyan-400">Home</a>
+                <a href="#" class="text-gray-300 hover:text-cyan-400">Tours</a>
+                <a href="#" class="text-gray-300 hover:text-cyan-400">Destinations</a>
+                <a href="#" class="text-gray-300 hover:text-cyan-400">About</a>
+                <button class="bg-gradient-to-r from-yellow-500 to-orange-600 px-4 py-2 rounded-lg font-semibold">Book Now</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="min-h-screen">
+        <!-- Hero Section -->
+        <section class="relative min-h-[90vh] overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&h=900&fit=crop" 
+                 alt="Adventure destinations" 
+                 class="absolute inset-0 w-full h-full object-cover opacity-40">
+            
+            <!-- Gradient overlay -->
+            <div class="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/40 to-slate-900"></div>
+            
+            <!-- Hero content -->
+            <div class="relative z-10 flex flex-col items-center justify-center min-h-[90vh] text-center px-4">
+                <h1 class="text-5xl md:text-7xl font-extrabold mb-6">
+                    Epic 
+                    <span class="gradient-text-adventure">Adventure</span>
+                    <span class="gradient-text-tours">Tours</span>
+                </h1>
+                <p class="text-xl md:text-2xl text-gray-300 mb-10 max-w-3xl">
+                    Discover the world's most thrilling destinations with our expertly crafted adventure packages.
+                </p>
+                
+                <!-- CTA Buttons -->
+                <div class="flex flex-wrap gap-4 justify-center mb-16">
+                    <button class="px-8 py-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg font-semibold hover:from-yellow-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Explore Tours
+                    </button>
+                    <button class="px-8 py-4 border-2 border-cyan-400 text-cyan-400 rounded-lg font-semibold hover:bg-cyan-400 hover:text-slate-900 transition-all transform hover:scale-105 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        Custom Trip
+                    </button>
+                </div>
+
+                <!-- Stats Section -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl w-full">
+                    <div class="stat-card bg-slate-800/50 backdrop-blur-md rounded-xl p-6 border border-slate-700 hover:border-yellow-500">
+                        <div class="text-4xl font-bold gradient-text-tours mb-2">50+</div>
+                        <div class="text-gray-300 text-sm">Destinations</div>
+                    </div>
+                    <div class="stat-card bg-slate-800/50 backdrop-blur-md rounded-xl p-6 border border-slate-700 hover:border-cyan-500">
+                        <div class="text-4xl font-bold gradient-text-adventure mb-2">24/7</div>
+                        <div class="text-gray-300 text-sm">Expert Support</div>
+                    </div>
+                    <div class="stat-card bg-slate-800/50 backdrop-blur-md rounded-xl p-6 border border-slate-700 hover:border-green-500">
+                        <div class="text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent mb-2">98%</div>
+                        <div class="text-gray-300 text-sm">5-Star Reviews</div>
+                    </div>
+                    <div class="stat-card bg-slate-800/50 backdrop-blur-md rounded-xl p-6 border border-slate-700 hover:border-purple-500">
+                        <div class="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent mb-2">2010</div>
+                        <div class="text-gray-300 text-sm">Since</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Tours Section -->
+        <section class="py-20 bg-slate-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-4xl font-bold text-center mb-4">
+                    <span class="gradient-text-adventure">Featured</span>
+                    Adventures
+                </h2>
+                <p class="text-center text-gray-400 mb-12 max-w-2xl mx-auto">
+                    Handpicked experiences designed to create unforgettable memories
+                </p>
+                
+                <!-- Tour Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Tour Card 1 - Himalayan Trekking -->
+                    <div class="tour-card bg-slate-800 rounded-2xl overflow-hidden border-2 border-slate-700 hover:border-cyan-500">
+                        <!-- Tour Image -->
+                        <div class="relative h-72 group">
+                            <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop" 
+                                 alt="Himalayan Trekking" 
+                                 class="w-full h-full object-cover">
+                            
+                            <!-- Favorite icon -->
+                            <button class="favorite-btn absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm p-2 rounded-full hover:bg-slate-900 z-10">
+                                <svg class="w-6 h-6 fill-none text-white" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            </button>
+
+                            <!-- Badge -->
+                            <div class="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                🔥 Popular
+                            </div>
+
+                            <!-- Duration -->
+                            <div class="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                14 days
+                            </div>
+                        </div>
+
+                        <!-- Card Content -->
+                        <div class="p-6">
+                            <h3 class="text-2xl font-bold mb-2 text-white">Himalayan Trekking Expedition</h3>
+                            <p class="text-cyan-400 text-sm mb-3">14-day trek through the majestic Himalayas with expert guides and full support team.</p>
+
+                            <!-- Price and Feature -->
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-3xl font-bold gradient-text-tours">$2,499</span>
+                                <span class="text-cyan-400 text-xs font-semibold px-3 py-1 bg-slate-700 rounded-full">All Inclusive</span>
+                            </div>
+
+                            <!-- Rating and Difficulty -->
+                            <div class="flex justify-between items-center mb-4 text-sm">
+                                <div class="flex items-center gap-1">
+                                    <span class="text-yellow-400">⭐</span>
+                                    <span class="text-white font-semibold">4.8</span>
+                                    <span class="text-gray-400">(124 reviews)</span>
+                                </div>
+                                <div class="flex items-center gap-1 text-gray-400">
+                                    <span>🔥</span>
+                                    <span class="text-xs">Extreme</span>
+                                </div>
+                            </div>
+
+                            <!-- Book button -->
+                            <button class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg">
+                                🛒 Book This Tour
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tour Card 2 - Amazon Rainforest -->
+                    <div class="tour-card bg-slate-800 rounded-2xl overflow-hidden border-2 border-slate-700 hover:border-cyan-500">
+                        <div class="relative h-72 group">
+                            <img src="https://images.unsplash.com/photo-1516426122078-c23e76319801?w=800&h=600&fit=crop" 
+                                 alt="Amazon Rainforest" 
+                                 class="w-full h-full object-cover">
+                            
+                            <button class="favorite-btn absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm p-2 rounded-full hover:bg-slate-900 z-10">
+                                <svg class="w-6 h-6 fill-none text-white" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            </button>
+
+                            <div class="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                ✨ New
+                            </div>
+
+                            <div class="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                8 days
+                            </div>
+                        </div>
+
+                        <div class="p-6">
+                            <h3 class="text-2xl font-bold mb-2 text-white">Amazon Rainforest Adventure</h3>
+                            <p class="text-green-400 text-sm mb-3">8-day immersive experience in the world's largest tropical rainforest with wildlife experts.</p>
+
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-3xl font-bold gradient-text-tours">$1,799</span>
+                                <span class="text-green-400 text-xs font-semibold px-3 py-1 bg-slate-700 rounded-full">Eco-Friendly</span>
+                            </div>
+
+                            <div class="flex justify-between items-center mb-4 text-sm">
+                                <div class="flex items-center gap-1">
+                                    <span class="text-yellow-400">⭐</span>
+                                    <span class="text-white font-semibold">4.9</span>
+                                    <span class="text-gray-400">(89 reviews)</span>
+                                </div>
+                                <div class="flex items-center gap-1 text-gray-400">
+                                    <span>🌊</span>
+                                    <span class="text-xs">Moderate</span>
+                                </div>
+                            </div>
+
+                            <button class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg">
+                                🛒 Book This Tour
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tour Card 3 - Patagonia Glacier -->
+                    <div class="tour-card bg-slate-800 rounded-2xl overflow-hidden border-2 border-slate-700 hover:border-cyan-500">
+                        <div class="relative h-72 group">
+                            <img src="https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=800&h=600&fit=crop" 
+                                 alt="Patagonia Glacier" 
+                                 class="w-full h-full object-cover">
+                            
+                            <button class="favorite-btn absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm p-2 rounded-full hover:bg-slate-900 z-10">
+                                <svg class="w-6 h-6 fill-none text-white" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            </button>
+
+                            <div class="absolute top-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                ⚡ Limited
+                            </div>
+
+                            <div class="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                10 days
+                            </div>
+                        </div>
+
+                        <div class="p-6">
+                            <h3 class="text-2xl font-bold mb-2 text-white">Patagonia Glacier Exploration</h3>
+                            <p class="text-orange-400 text-sm mb-3">10-day journey through the stunning glaciers and mountains of Patagonia with expert mountaineers.</p>
+
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-3xl font-bold gradient-text-tours">$3,199</span>
+                                <span class="text-orange-400 text-xs font-semibold px-3 py-1 bg-slate-700 rounded-full">Small Group</span>
+                            </div>
+
+                            <div class="flex justify-between items-center mb-4 text-sm">
+                                <div class="flex items-center gap-1">
+                                    <span class="text-yellow-400">⭐</span>
+                                    <span class="text-white font-semibold">4.7</span>
+                                    <span class="text-gray-400">(156 reviews)</span>
+                                </div>
+                                <div class="flex items-center gap-1 text-gray-400">
+                                    <span>⛰️</span>
+                                    <span class="text-xs">Challenging</span>
+                                </div>
+                            </div>
+
+                            <button class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg">
+                                🛒 Book This Tour
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Add favorite toggle functionality
+        document.querySelectorAll('.favorite-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const svg = this.querySelector('svg');
+                if (svg.classList.contains('fill-none')) {
+                    svg.classList.remove('fill-none');
+                    svg.classList.add('favorite-active');
+                } else {
+                    svg.classList.remove('favorite-active');
+                    svg.classList.add('fill-none');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
