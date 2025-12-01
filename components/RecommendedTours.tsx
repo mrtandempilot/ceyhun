@@ -106,10 +106,10 @@ export default function RecommendedTours() {
                       {formatPrice(tour)}
                     </span>
                     <Link
-                      href={`/book?tour=${tour.id}`}
+                      href={`/tours/${tour.slug}`}
                       className={`${categoryButtonColors[tour.category] || 'bg-blue-600 hover:bg-blue-700'} text-white px-6 py-2 rounded-lg transition`}
                     >
-                      Book Now
+                      View Details
                     </Link>
                   </div>
                 </div>
