@@ -101,7 +101,7 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
         <div className="relative max-w-full overflow-hidden">
           <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}>
             {/* Slide 1 - First set of 3 images */}
-            <div className="min-w-full grid grid-cols-3 gap-0">
+            <div className="min-w-full grid grid-cols-3 gap-[10px]">
               {galleryImages.length > 0 || tour.image_url ? (
                 <>
                   <div className="relative h-64 md:h-80">
@@ -142,7 +142,7 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
             </div>
 
             {/* Slide 2 - Second set of 3 images */}
-            <div className="min-w-full grid grid-cols-3 gap-0">
+            <div className="min-w-full grid grid-cols-3 gap-[10px]">
               {galleryImages.length > 0 || tour.image_url ? (
                 <>
                   <div className="relative h-64 md:h-80">
