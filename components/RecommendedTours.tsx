@@ -83,7 +83,7 @@ export default function RecommendedTours() {
                       src={tour.image_url}
                       alt={tour.name}
                       fill
-                      className="object-cover"
+                      className="object-cover hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                 ) : (
