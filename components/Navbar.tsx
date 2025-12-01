@@ -6,11 +6,15 @@ import { useRouter } from "next/navigation";
 import { getCurrentUser, signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { useNotifications } from "./NotificationProvider";
+import { Tour } from "@/types/tour";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tours, setTours] = useState<Tour[]>([]);
+  const [toursDropdownOpen, setToursDropdownOpen] = useState(false);
+  const [mobileToursOpen, setMobileToursOpen] = useState(false);
   const router = useRouter();
   const { unreadCount } = useNotifications();
 
@@ -27,6 +31,25 @@ export default function Navbar() {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    async function fetchTours() {
+      try {
+        const { data, error } = await supabase
+          .from('tours')
+          .select('*')
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+        setTours(data || []);
+      } catch (error) {
+        console.error('Error fetching tours:', error);
+      }
+    }
+
+    fetchTours();
   }, []);
 
   const handleSignOut = async () => {
@@ -55,9 +78,46 @@ export default function Navbar() {
             <Link href="/" className="hover:text-blue-200 transition">
               Home
             </Link>
-            <Link href="/tours" className="hover:text-blue-200 transition">
-              Tours
-            </Link>
+            <div className="relative">
+              <button
+                onMouseEnter={() => setToursDropdownOpen(true)}
+                onMouseLeave={() => setToursDropdownOpen(false)}
+                className="hover:text-blue-200 transition flex items-center"
+              >
+                Tours
+                <svg
+                  className={`ml-1 h-4 w-4 transition-transform ${toursDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {toursDropdownOpen && (
+                <div
+                  className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg py-2 min-w-max z-50"
+                  onMouseEnter={() => setToursDropdownOpen(true)}
+                  onMouseLeave={() => setToursDropdownOpen(false)}
+                >
+                  <Link
+                    href="/tours"
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    All Tours
+                  </Link>
+                  {tours.map((tour) => (
+                    <Link
+                      key={tour.id}
+                      href={`/tours/${tour.slug}`}
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition whitespace-nowrap"
+                    >
+                      {tour.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
             {user && user.email === 'mrtandempilot@gmail.com' && (
               <>
                 <Link href="/dashboard" className="hover:text-blue-200 transition">
@@ -139,13 +199,43 @@ export default function Navbar() {
             >
               Home
             </Link>
-            <Link
-              href="/tours"
-              className="block py-2 hover:text-blue-200 transition"
-              onClick={() => setIsOpen(false)}
-            >
-              Tours
-            </Link>
+            <div>
+              <button
+                onClick={() => setMobileToursOpen(!mobileToursOpen)}
+                className="block py-2 hover:text-blue-200 transition w-full text-left flex items-center justify-between"
+              >
+                Tours
+                <svg
+                  className={`h-4 w-4 transition-transform ${mobileToursOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {mobileToursOpen && (
+                <div className="ml-4 space-y-1">
+                  <Link
+                    href="/tours"
+                    className="block py-1 px-2 text-blue-200 hover:text-white transition"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    All Tours
+                  </Link>
+                  {tours.map((tour) => (
+                    <Link
+                      key={tour.id}
+                      href={`/tours/${tour.slug}`}
+                      className="block py-1 px-2 text-blue-200 hover:text-white transition"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      {tour.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
             {user && user.email === 'mrtandempilot@gmail.com' && (
               <>
                 <Link
