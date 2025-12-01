@@ -105,17 +105,22 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
             <div className="min-w-full grid grid-cols-3 gap-[30px]">
               {galleryImages.length > 0 || tour.image_url ? (
                 <>
-                  <div className="relative h-56 md:h-72">
+                  <div className="relative h-64 md:h-80">
                     <Image
                       src={getImageSrc(0)}
-                      alt={`${tour.name}
+                      alt={`${tour.name} gallery view 1`}
+                      fill
+                      sizes="33vw"
+                      className="object-cover"
+                    />
+                  </div>
                   <div className="relative h-64 md:h-80">
                     <Image
                       src={getImageSrc(1)}
                       alt={`${tour.name} gallery view 2`}
-                    fill
-                    sizes="33vw"
-                    className="object-cover"
+                      fill
+                      sizes="33vw"
+                      className="object-cover"
                     />
                   </div>
                   <div className="relative h-64 md:h-80">
