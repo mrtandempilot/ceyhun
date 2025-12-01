@@ -23,7 +23,6 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
   const [tour, setTour] = useState<Tour | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     async function fetchTour() {
@@ -87,86 +86,60 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
     );
   }
 
-  const carouselImages = tour.image_url ? [
-    tour.image_url,
-    tour.image_url,
-    tour.image_url,
-    tour.image_url
-  ] : [];
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % carouselImages.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + carouselImages.length) % carouselImages.length);
-  };
-
-  const goToImage = (index: number) => {
-    setCurrentImageIndex(index);
-  };
 
   return (
     <main className="min-h-screen">
       {/* Image Gallery Section */}
       <section className="pt-20 pb-8 bg-gray-100">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative">
-            {/* Carousel Container */}
-            <div className="relative h-96 rounded-lg overflow-hidden">
-              {carouselImages.length > 0 ? (
-                <Image
-                  src={carouselImages[currentImageIndex]}
-                  alt={`${tour.name} view ${currentImageIndex + 1}`}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 75vw, 50vw"
-                  className="object-cover hover:scale-105 transition-transform duration-500"
-                />
-              ) : (
-                <div className={`h-full bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
-              )}
-            </div>
-
-            {/* Navigation Arrows */}
-            {carouselImages.length > 1 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {tour.image_url ? (
               <>
-                <button
-                  onClick={prevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 z-10"
-                  aria-label="Previous image"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 z-10"
-                  aria-label="Next image"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </>
-            )}
-
-            {/* Dots Indicator */}
-            {carouselImages.length > 1 && (
-              <div className="flex justify-center space-x-2 mt-4">
-                {carouselImages.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => goToImage(index)}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentImageIndex
-                        ? 'bg-blue-600 scale-125'
-                        : 'bg-gray-400 hover:bg-gray-600'
-                    }`}
-                    aria-label={`Go to image ${index + 1}`}
+                <div className="relative h-48 rounded-lg overflow-hidden">
+                  <Image
+                    src={tour.image_url}
+                    alt={`${tour.name} view 1`}
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                    className="object-cover hover:scale-105 transition-transform duration-300"
                   />
-                ))}
-              </div>
+                </div>
+                <div className="relative h-48 rounded-lg overflow-hidden">
+                  <Image
+                    src={tour.image_url}
+                    alt={`${tour.name} view 2`}
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                    className="object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="relative h-48 rounded-lg overflow-hidden">
+                  <Image
+                    src={tour.image_url}
+                    alt={`${tour.name} view 3`}
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                    className="object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="relative h-48 rounded-lg overflow-hidden">
+                  <Image
+                    src={tour.image_url}
+                    alt={`${tour.name} view 4`}
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                    className="object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={`h-48 rounded-lg bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                <div className={`h-48 rounded-lg bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                <div className={`h-48 rounded-lg bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                <div className={`h-48 rounded-lg bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+              </>
             )}
           </div>
         </div>
