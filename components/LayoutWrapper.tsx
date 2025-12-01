@@ -9,6 +9,7 @@ import Footer from './Footer';
 import { NotificationProvider } from './NotificationProvider';
 import { NotificationToast } from './NotificationToast';
 import Chatbot from './Chatbot';
+import RecommendedTours from './RecommendedTours';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -38,6 +39,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       {loading ? (
         <>
           {children}
+          <RecommendedTours />
           <Footer />
         </>
       ) : isAdmin ? (
@@ -50,6 +52,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       ) : (
         <>
           {children}
+          <RecommendedTours />
           <Footer />
         </>
       )}
