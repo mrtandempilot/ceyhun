@@ -90,49 +90,30 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
     <main className="min-h-screen">
       {/* Header Section */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold bg-white bg-opacity-20 text-white`}>
-                  {tour.category}
-                </span>
-              </div>
-              <h1 className="text-5xl font-bold mb-4">{tour.name}</h1>
-              <p className="text-xl mb-6">{tour.short_description}</p>
-              <div className="flex items-center gap-6 mb-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold">{formatPrice(tour)}</div>
-                  <div className="text-sm opacity-90">per adult</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold">{tour.duration}</div>
-                  <div className="text-sm opacity-90">duration</div>
-                </div>
-              </div>
-              <Link
-                href={`/book?tour=${tour.id}`}
-                className={`${categoryButtonColors[tour.category] || 'bg-blue-600 hover:bg-blue-700'} text-white px-8 py-3 rounded-lg font-semibold text-lg hover:scale-105 transition inline-block`}
-              >
-                Book This Tour
-              </Link>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex items-center gap-2 mb-4">
+            <span className={`px-3 py-1 rounded-full text-sm font-semibold bg-white bg-opacity-20 text-white`}>
+              {tour.category}
+            </span>
+          </div>
+          <h1 className="text-5xl font-bold mb-4">{tour.name}</h1>
+          <p className="text-xl mb-6 max-w-3xl mx-auto">{tour.short_description}</p>
+          <div className="flex items-center gap-6 justify-center mb-6">
+            <div className="text-center">
+              <div className="text-3xl font-bold">{formatPrice(tour)}</div>
+              <div className="text-sm opacity-90">per adult</div>
             </div>
-            <div>
-              {tour.image_url ? (
-                <div className="relative h-96 rounded-lg overflow-hidden">
-                  <Image
-                    src={tour.image_url}
-                    alt={tour.name}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    className="object-cover"
-                  />
-                </div>
-              ) : (
-                <div className={`h-96 rounded-lg bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
-              )}
+            <div className="text-center">
+              <div className="text-3xl font-bold">{tour.duration}</div>
+              <div className="text-sm opacity-90">duration</div>
             </div>
           </div>
+          <Link
+            href={`/book?tour=${tour.id}`}
+            className={`${categoryButtonColors[tour.category] || 'bg-blue-600 hover:bg-blue-700'} text-white px-8 py-3 rounded-lg font-semibold text-lg hover:scale-105 transition inline-block`}
+          >
+            Book This Tour
+          </Link>
         </div>
       </section>
 
