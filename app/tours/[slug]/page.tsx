@@ -91,11 +91,6 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
       {/* Header Section */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <span className={`px-3 py-1 rounded-full text-sm font-semibold bg-white bg-opacity-20 text-white`}>
-              {tour.category}
-            </span>
-          </div>
         </div>
       </section>
 
