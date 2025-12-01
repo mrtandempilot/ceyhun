@@ -92,64 +92,112 @@ export default function TourDetailPage({ params }: { params: { slug: string } })
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Image Carousel Section */}
+      {/* Image Carousel Section - 3 Images Side by Side */}
       <section className="pt-16">
-        <div className="relative max-w-full">
-          <div className="relative h-64 md:h-96 overflow-hidden">
-            {tour.image_url ? (
-              <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}>
-                <div className="min-w-full h-full relative">
-                  <Image
-                    src={tour.image_url}
-                    alt={`${tour.name} view 1`}
-                    fill
-                    sizes="100vw"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="min-w-full h-full relative">
-                  <Image
-                    src={tour.image_url}
-                    alt={`${tour.name} view 2`}
-                    fill
-                    sizes="100vw"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="min-w-full h-full relative">
-                  <Image
-                    src={tour.image_url}
-                    alt={`${tour.name} view 3`}
-                    fill
-                    sizes="100vw"
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className={`h-full bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
-            )}
+        <div className="relative max-w-full overflow-hidden">
+          <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}>
+            {/* Slide 1 - First set of 3 images */}
+            <div className="min-w-full grid grid-cols-3 gap-0">
+              {tour.image_url ? (
+                <>
+                  <div className="relative h-64 md:h-80">
+                    <Image
+                      src={tour.image_url}
+                      alt={`${tour.name} view 1`}
+                      fill
+                      sizes="33vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="relative h-64 md:h-80">
+                    <Image
+                      src={tour.image_url}
+                      alt={`${tour.name} view 2`}
+                      fill
+                      sizes="33vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="relative h-64 md:h-80">
+                    <Image
+                      src={tour.image_url}
+                      alt={`${tour.name} view 3`}
+                      fill
+                      sizes="33vw"
+                      className="object-cover"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={`h-64 md:h-80 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                  <div className={`h-64 md:h-80 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                  <div className={`h-64 md:h-80 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                </>
+              )}
+            </div>
             
-            {/* Navigation Arrows */}
-            <button
-              onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? 2 : prev - 1))}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all z-10"
-              aria-label="Previous image"
-            >
-              <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setCurrentImageIndex((prev) => (prev === 2 ? 0 : prev + 1))}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all z-10"
-              aria-label="Next image"
-            >
-              <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            {/* Slide 2 - Second set of 3 images */}
+            <div className="min-w-full grid grid-cols-3 gap-0">
+              {tour.image_url ? (
+                <>
+                  <div className="relative h-64 md:h-80">
+                    <Image
+                      src={tour.image_url}
+                      alt={`${tour.name} view 4`}
+                      fill
+                      sizes="33vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="relative h-64 md:h-80">
+                    <Image
+                      src={tour.image_url}
+                      alt={`${tour.name} view 5`}
+                      fill
+                      sizes="33vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="relative h-64 md:h-80">
+                    <Image
+                      src={tour.image_url}
+                      alt={`${tour.name} view 6`}
+                      fill
+                      sizes="33vw"
+                      className="object-cover"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={`h-64 md:h-80 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                  <div className={`h-64 md:h-80 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                  <div className={`h-64 md:h-80 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}></div>
+                </>
+              )}
+            </div>
           </div>
+          
+          {/* Navigation Arrows */}
+          <button
+            onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? 1 : 0))}
+            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all z-10"
+            aria-label="Previous images"
+          >
+            <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setCurrentImageIndex((prev) => (prev === 1 ? 0 : 1))}
+            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all z-10"
+            aria-label="Next images"
+          >
+            <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </section>
 
