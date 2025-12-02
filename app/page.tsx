@@ -73,7 +73,7 @@ export default function Home() {
       {/* Hero Section with Epic Adventure Tours */}
       <section className="relative min-h-[90vh] overflow-hidden">
         <Image
-          src="/images/mali.jpg"
+          src="/hero-bg.jpg"
           alt="Adventure destinations"
           fill
           className="object-cover opacity-40"
@@ -181,7 +181,7 @@ export default function Home() {
                     className="bg-slate-800 rounded-2xl overflow-hidden border-2 border-slate-700 hover:border-cyan-500 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/20"
                   >
                     {/* Tour Image with overlays */}
-                    <div className="relative h-56 md:h-72 group">
+                    <div className="relative h-48 md:h-56 group">
                       {tour.image_url ? (
                         <Image
                           src={tour.image_url}
