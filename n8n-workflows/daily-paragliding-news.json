@@ -1,5 +1,5 @@
 {
-    "name": "Daily News - Multiple Sources",
+    "name": "Daily News - No Repeats",
     "nodes": [
         {
             "parameters": {
@@ -11,8 +11,8 @@
                     ]
                 }
             },
-            "id": "schedule-trigger",
-            "name": "Every Day at 9 AM Turkish",
+            "id": "schedule",
+            "name": "Every Day 9 AM",
             "type": "n8n-nodes-base.scheduleTrigger",
             "typeVersion": 1.2,
             "position": [
@@ -25,22 +25,8 @@
                 "url": "https://www.xcmag.com/feed/",
                 "options": {}
             },
-            "id": "rss-xcmag",
-            "name": "Cross Country Magazine",
-            "type": "n8n-nodes-base.rssFeedRead",
-            "typeVersion": 1,
-            "position": [
-                440,
-                200
-            ]
-        },
-        {
-            "parameters": {
-                "url": "https://www.flyparagliding.com/feed/",
-                "options": {}
-            },
-            "id": "rss-flypara",
-            "name": "Fly Paragliding",
+            "id": "rss",
+            "name": "Fetch RSS Feed",
             "type": "n8n-nodes-base.rssFeedRead",
             "typeVersion": 1,
             "position": [
@@ -50,93 +36,30 @@
         },
         {
             "parameters": {
-                "url": "https://www.flyozone.com/blog/feed/",
+                "method": "GET",
+                "url": "https://ceyhun.vercel.app/api/blog/posts?limit=100&sort=latest",
                 "options": {}
             },
-            "id": "rss-ozone",
-            "name": "Ozone Blog",
-            "type": "n8n-nodes-base.rssFeedRead",
-            "typeVersion": 1,
-            "position": [
-                440,
-                400
-            ]
-        },
-        {
-            "parameters": {
-                "url": "https://www.gingliders.com/feed/",
-                "options": {}
-            },
-            "id": "rss-gin",
-            "name": "Gin Gliders",
-            "type": "n8n-nodes-base.rssFeedRead",
-            "typeVersion": 1,
-            "position": [
-                440,
-                500
-            ]
-        },
-        {
-            "parameters": {
-                "mode": "combine",
-                "combineBy": "combineAll"
-            },
-            "id": "merge-feeds",
-            "name": "Merge All Sources",
-            "type": "n8n-nodes-base.merge",
-            "typeVersion": 3,
-            "position": [
-                640,
-                350
-            ]
-        },
-        {
-            "parameters": {
-                "jsCode": "// Get the latest article from ALL sources\nconst items = $input.all();\n\nif (items.length === 0) {\n  throw new Error('No articles found in any RSS feed');\n}\n\n// Sort by date and get most recent from ANY source\nconst sorted = items.sort((a, b) => {\n  const dateA = new Date(a.json.pubDate || a.json.isoDate || 0);\n  const dateB = new Date(b.json.pubDate || b.json.isoDate || 0);\n  return dateB - dateA;\n});\n\nconst article = sorted[0].json;\n\n// Detect source name from link\nlet sourceName = 'Paragliding News';\nif (article.link.includes('xcmag')) sourceName = 'Cross Country Magazine';\nelse if (article.link.includes('flyparagliding')) sourceName = 'Fly Paragliding';\nelse if (article.link.includes('ozone')) sourceName = 'Ozone Paragliders';\nelse if (article.link.includes('gin')) sourceName = 'Gin Gliders';\n\n// Extract keywords for image search\nconst keywords = article.title.toLowerCase();\nlet searchTerm = 'paragliding';\n\nif (keywords.includes('competition') || keywords.includes('race') || keywords.includes('x-alps')) {\n  searchTerm = 'paragliding competition';\n} else if (keywords.includes('safety') || keywords.includes('accident')) {\n  searchTerm = 'paragliding safety';\n} else if (keywords.includes('wing') || keywords.includes('glider')) {\n  searchTerm = 'paragliding equipment';\n} else if (keywords.includes('alps') || keywords.includes('mountain')) {\n  searchTerm = 'paragliding alps mountains';\n} else if (keywords.includes('acro') || keywords.includes('trick')) {\n  searchTerm = 'paragliding acrobatics';\n} else {\n  searchTerm = 'paragliding adventure';\n}\n\nreturn {\n  json: {\n    original_title: article.title,\n    original_content: article.content || article.contentSnippet || article.description,\n    source_url: article.link,\n    source_name: sourceName,\n    image_search_term: searchTerm\n  }\n};"
-            },
-            "id": "process-article",
-            "name": "Pick Latest from Any Source",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                840,
-                350
-            ]
-        },
-        {
-            "parameters": {
-                "url": "=https://api.unsplash.com/search/photos?query={{ $json.image_search_term }}&per_page=1&orientation=landscape",
-                "sendHeaders": true,
-                "headerParameters": {
-                    "parameters": [
-                        {
-                            "name": "Authorization",
-                            "value": "Client-ID 5Y8IjNUO-cPfLumpleRCDn-QQ3bqmh_2S8vqu00ZZ7w"
-                        }
-                    ]
-                },
-                "options": {}
-            },
-            "id": "unsplash-search",
-            "name": "Search Unsplash",
+            "id": "check-published",
+            "name": "Get Already Published",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.2,
             "position": [
-                1040,
-                350
+                440,
+                450
             ]
         },
         {
             "parameters": {
-                "jsCode": "// Get Unsplash image or fallback\nconst unsplash = $input.first().json;\nconst article = $('Pick Latest from Any Source').first().json;\n\nlet imageUrl = 'https://images.unsplash.com/photo-1511576661531-b34d7da5d0bb?w=1200';\n\nif (unsplash.results && unsplash.results.length > 0) {\n  imageUrl = unsplash.results[0].urls.regular;\n}\n\nreturn {\n  json: {\n    ...article,\n    image_url: imageUrl\n  }\n};"
+                "jsCode": "// Get all RSS articles\nconst rssArticles = $('Fetch RSS Feed').all();\n\n// Get already published posts\nconst published = $input.first().json.posts || [];\nconst publishedUrls = published.map(p => {\n  // Extract source URL from content (we add it at the end)\n  const match = p.content?.match(/Source: \\[.*?\\]\\((.+?)\\)/);\n  return match ? match[1] : null;\n}).filter(Boolean);\n\n// Filter out already published articles\nconst newArticles = rssArticles.filter(item => {\n  const url = item.json.link;\n  return !publishedUrls.includes(url);\n});\n\nif (newArticles.length === 0) {\n  throw new Error('All articles already published! Wait for new content.');\n}\n\n// Pick random article from unpublished ones\nconst randomIndex = Math.floor(Math.random() * newArticles.length);\nconst article = newArticles[randomIndex].json;\n\nreturn {\n  json: {\n    original_title: article.title,\n    original_content: article.content || article.contentSnippet || article.description,\n    source_url: article.link,\n    source_name: 'Cross Country Magazine',\n    image_url: 'https://images.unsplash.com/photo-1511576661531-b34d7da5d0bb?w=1200',\n    pub_date: article.pubDate\n  }\n};"
             },
-            "id": "get-image",
-            "name": "Get Image URL",
+            "id": "pick-new",
+            "name": "Pick Unpublished Article",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                1240,
-                350
+                640,
+                375
             ]
         },
         {
@@ -168,7 +91,7 @@
                         },
                         {
                             "name": "messages",
-                            "value": "={{ [{\"role\": \"user\", \"content\": `You are a professional paragliding content writer for Oludeniz Tours in Turkey.\n\nRewrite this paragliding article for our blog:\n\nTitle: ${$json.original_title}\nContent: ${$json.original_content}\nSource: ${$json.source_name}\n\nRequirements:\n- Create NEW engaging title (max 60 chars)\n- Completely rewrite in 600-800 words with markdown formatting\n- Add Oludeniz/Turkey perspective when relevant\n- SEO-optimize with keywords: paragliding, oludeniz, turkey, babadag\n- Make engaging for adventure travelers\n- Categorize as ONE of: Safety, Gear & Equipment, Events, Industry News, Tips & Guides\n\nRespond with ONLY valid JSON (no markdown code blocks):\n{\n  \"title\": \"engaging title here\",\n  \"content\": \"full article in markdown\",\n  \"excerpt\": \"2-sentence preview\",\n  \"category\": \"one category\",\n  \"tags\": [\"tag1\", \"tag2\", \"tag3\"],\n  \"meta_description\": \"150-160 char SEO description\"\n}`}] }}"
+                            "value": "={{ [{\"role\": \"user\", \"content\": `Rewrite for Oludeniz Tours:\\n\\nTitle: ${$json.original_title}\\nContent: ${$json.original_content}\\n\\n600-800 words, SEO. JSON:\\n{\"title\":\"...\",\"content\":\"...\",\"excerpt\":\"...\",\"category\":\"Safety|Gear & Equipment|Events|Industry News|Tips & Guides\",\"tags\":[\"paragliding\",\"news\"],\"meta_description\":\"...\"}`}] }}"
                         },
                         {
                             "name": "temperature",
@@ -182,13 +105,13 @@
                 },
                 "options": {}
             },
-            "id": "ai-rewrite",
-            "name": "AI Rewrite Article",
+            "id": "ai",
+            "name": "AI Rewrite",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.2,
             "position": [
-                1440,
-                350
+                840,
+                375
             ],
             "credentials": {
                 "openRouterApi": {
@@ -199,15 +122,15 @@
         },
         {
             "parameters": {
-                "jsCode": "// Parse AI response\nconst response = $input.first().json;\nconst article = $('Get Image URL').first().json;\n\nconst aiContent = response.choices[0].message.content;\n\nlet blogData;\ntry {\n  let cleaned = aiContent.trim();\n  if (cleaned.startsWith('```')) {\n    cleaned = cleaned.replace(/```json\\s*/g, '').replace(/```\\s*/g, '');\n  }\n  blogData = JSON.parse(cleaned);\n} catch (error) {\n  const match = aiContent.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    blogData = JSON.parse(match[0]);\n  } else {\n    throw new Error('Could not parse AI response: ' + error.message);\n  }\n}\n\nconst contentWithSource = blogData.content + `\\n\\n---\\n\\n*Source: [${article.source_name}](${article.source_url})*`;\n\nreturn {\n  json: {\n    title: blogData.title,\n    content: contentWithSource,\n    excerpt: blogData.excerpt,\n    featured_image: article.image_url,\n    featured_image_alt: blogData.title,\n    author_name: 'Oludeniz Tours Team',\n    author_avatar: 'https://ui-avatars.com/api/?name=Oludeniz+Tours&background=3B82F6&color=fff&size=200',\n    categories: [blogData.category],\n    tags: blogData.tags || ['paragliding', 'news'],\n    meta_description: blogData.meta_description,\n    status: 'published',\n    is_featured: false\n  }\n};"
+                "jsCode": "const response = $input.first().json;\nconst article = $('Pick Unpublished Article').first().json;\nlet aiContent = response.choices[0].message.content;\n\nlet blogData;\ntry {\n  // Clean the response\n  aiContent = aiContent.trim();\n  \n  // Remove markdown code blocks\n  aiContent = aiContent.replace(/```json\\s*/g, '').replace(/```\\s*/g, '');\n  \n  // Try to extract JSON object\n  const jsonMatch = aiContent.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) {\n    throw new Error('No JSON found in AI response');\n  }\n  \n  blogData = JSON.parse(jsonMatch[0]);\n} catch (e) {\n  // If parsing still fails, log and use defaults\n  console.error('Parse error:', e.message);\n  console.error('AI content:', aiContent);\n  \n  blogData = {\n    title: article.original_title,\n    content: article.original_content,\n    excerpt: article.original_content.substring(0, 200) + '...',\n    category: 'Industry News',\n    tags: ['paragliding', 'news'],\n    meta_description: article.original_title\n  };\n}\n\nreturn {\n  json: {\n    title: blogData.title,\n    content: blogData.content + `\\n\\n---\\n*Source: [${article.source_name}](${article.source_url})*`,\n    excerpt: blogData.excerpt,\n    featured_image: article.image_url,\n    featured_image_alt: blogData.title,\n    author_name: 'Oludeniz Tours Team',\n    author_avatar: 'https://ui-avatars.com/api/?name=Oludeniz+Tours&background=3B82F6&color=fff&size=200',\n    categories: [blogData.category],\n    tags: blogData.tags || ['paragliding', 'news'],\n    meta_description: blogData.meta_description,\n    status: 'published',\n    is_featured: false\n  }\n};"
             },
-            "id": "format-post",
-            "name": "Format Blog Post",
+            "id": "format",
+            "name": "Format Post",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                1640,
-                350
+                1040,
+                375
             ]
         },
         {
@@ -280,146 +203,81 @@
                 "options": {}
             },
             "id": "publish",
-            "name": "Publish to Blog",
+            "name": "Publish",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.2,
             "position": [
-                1840,
-                350
+                1240,
+                375
             ]
         }
     ],
     "connections": {
-        "Every Day at 9 AM Turkish": {
+        "Every Day 9 AM": {
             "main": [
                 [
                     {
-                        "node": "Cross Country Magazine",
+                        "node": "Fetch RSS Feed",
                         "type": "main",
                         "index": 0
                     },
                     {
-                        "node": "Fly Paragliding",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "Ozone Blog",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "Gin Gliders",
+                        "node": "Get Already Published",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Cross Country Magazine": {
+        "Fetch RSS Feed": {
             "main": [
                 [
                     {
-                        "node": "Merge All Sources",
+                        "node": "Pick Unpublished Article",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Fly Paragliding": {
+        "Get Already Published": {
             "main": [
                 [
                     {
-                        "node": "Merge All Sources",
-                        "type": "main",
-                        "index": 1
-                    }
-                ]
-            ]
-        },
-        "Ozone Blog": {
-            "main": [
-                [
-                    {
-                        "node": "Merge All Sources",
-                        "type": "main",
-                        "index": 2
-                    }
-                ]
-            ]
-        },
-        "Gin Gliders": {
-            "main": [
-                [
-                    {
-                        "node": "Merge All Sources",
-                        "type": "main",
-                        "index": 3
-                    }
-                ]
-            ]
-        },
-        "Merge All Sources": {
-            "main": [
-                [
-                    {
-                        "node": "Pick Latest from Any Source",
+                        "node": "Pick Unpublished Article",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Pick Latest from Any Source": {
+        "Pick Unpublished Article": {
             "main": [
                 [
                     {
-                        "node": "Search Unsplash",
+                        "node": "AI Rewrite",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Search Unsplash": {
+        "AI Rewrite": {
             "main": [
                 [
                     {
-                        "node": "Get Image URL",
+                        "node": "Format Post",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Get Image URL": {
+        "Format Post": {
             "main": [
                 [
                     {
-                        "node": "AI Rewrite Article",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "AI Rewrite Article": {
-            "main": [
-                [
-                    {
-                        "node": "Format Blog Post",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Format Blog Post": {
-            "main": [
-                [
-                    {
-                        "node": "Publish to Blog",
+                        "node": "Publish",
                         "type": "main",
                         "index": 0
                     }
@@ -433,8 +291,6 @@
         "executionOrder": "v1"
     },
     "versionId": "1",
-    "meta": {
-        "instanceId": "your-instance-id"
-    },
+    "meta": {},
     "tags": []
 }

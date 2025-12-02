@@ -85,7 +85,7 @@ export default async function BlogPage({
     const categories = await getCategories();
     const popularPosts = await getPopularPosts();
 
-    const featuredPost = posts.find((p: PostWithRelations) => p.is_featured) || posts[0];
+    const featuredPost = posts[0]; // Always show latest post
     const regularPosts = posts.filter((p: PostWithRelations) => p.id !== featuredPost?.id);
 
     return (
