@@ -165,6 +165,23 @@ export async function POST(request: NextRequest) {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
             `${request.nextUrl.protocol}//${request.nextUrl.host}`;
 
+        const postUrl = `${baseUrl}/blog/${post.slug}`;
+
+        // Trigger social media webhook (if configured)
+        const socialWebhook = process.env.N8N_SOCIAL_WEBHOOK_URL;
+        if (socialWebhook && post.status === 'published') {
+            fetch(socialWebhook, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: post.title,
+                    excerpt: post.excerpt || body.excerpt,
+                    url: postUrl,
+                    featured_image: post.featured_image
+                })
+            }).catch(err => console.error('Social webhook failed:', err));
+        }
+
         // Return success response
         return NextResponse.json({
             success: true,
@@ -172,7 +189,7 @@ export async function POST(request: NextRequest) {
                 id: post.id,
                 title: post.title,
                 slug: post.slug,
-                url: `${baseUrl}/blog/${post.slug}`,
+                url: postUrl,
                 status: post.status,
                 published_at: post.published_at,
             },

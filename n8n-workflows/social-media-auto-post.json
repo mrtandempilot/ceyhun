@@ -1,0 +1,244 @@
+{
+    "name": "Social Media Auto-Post",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "social-post",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook",
+            "name": "Blog Post Published",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                300
+            ],
+            "webhookId": "social-post-webhook"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Get blog post data from webhook\nconst post = $input.first().json;\n\n// Create Facebook post\nconst fbPost = `${post.title}\\n\\n${post.excerpt}\\n\\nRead more: ${post.url}\\n\\n#paragliding #oludeniz #turkey #adventure`;\n\n// Create Instagram caption (max 2200 chars)\nconst instaCaption = `${post.title}\\n\\n${post.excerpt}\\n\\n🔗 Link in bio\\n\\n#paragliding #oludeniz #turkey #adventure #travel #extremesports #flying #babadag`;\n\nreturn [\n  {\n    json: {\n      platform: 'facebook',\n      message: fbPost,\n      image_url: post.featured_image,\n      link: post.url\n    }\n  },\n  {\n    json: {\n      platform: 'instagram',\n      caption: instaCaption,\n      image_url: post.featured_image\n    }\n  }\n];"
+            },
+            "id": "format",
+            "name": "Format for Social Media",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://graph.facebook.com/v18.0/{{ $credentials.pageId }}/photos",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "facebookGraphApi",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "url",
+                            "value": "={{ $json.image_url }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $json.message }}"
+                        },
+                        {
+                            "name": "link",
+                            "value": "={{ $json.link }}"
+                        },
+                        {
+                            "name": "access_token",
+                            "value": "={{ $credentials.accessToken }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "facebook",
+            "name": "Post to Facebook",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                640,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://graph.facebook.com/v18.0/{{ $credentials.instagramAccountId }}/media",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "facebookGraphApi",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "image_url",
+                            "value": "={{ $json.image_url }}"
+                        },
+                        {
+                            "name": "caption",
+                            "value": "={{ $json.caption }}"
+                        },
+                        {
+                            "name": "access_token",
+                            "value": "={{ $credentials.accessToken }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "instagram-create",
+            "name": "Create Instagram Media",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                640,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Wait 30 seconds for Instagram to process media\nawait new Promise(resolve => setTimeout(resolve, 30000));\n\nconst media = $input.first().json;\nreturn {\n  json: {\n    creation_id: media.id\n  }\n};"
+            },
+            "id": "wait",
+            "name": "Wait for Processing",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                840,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://graph.facebook.com/v18.0/{{ $credentials.instagramAccountId }}/media_publish",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "facebookGraphApi",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "creation_id",
+                            "value": "={{ $json.creation_id }}"
+                        },
+                        {
+                            "name": "access_token",
+                            "value": "={{ $credentials.accessToken }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "instagram-publish",
+            "name": "Publish to Instagram",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1040,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { success: true, facebook: $('Post to Facebook').first().json, instagram: $('Publish to Instagram').first().json } }}"
+            },
+            "id": "response",
+            "name": "Success Response",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1240,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Blog Post Published": {
+            "main": [
+                [
+                    {
+                        "node": "Format for Social Media",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format for Social Media": {
+            "main": [
+                [
+                    {
+                        "node": "Post to Facebook",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Create Instagram Media",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Post to Facebook": {
+            "main": [
+                [
+                    {
+                        "node": "Success Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Instagram Media": {
+            "main": [
+                [
+                    {
+                        "node": "Wait for Processing",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Wait for Processing": {
+            "main": [
+                [
+                    {
+                        "node": "Publish to Instagram",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Publish to Instagram": {
+            "main": [
+                [
+                    {
+                        "node": "Success Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "1",
+    "meta": {},
+    "tags": []
+}
