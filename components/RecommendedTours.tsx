@@ -63,27 +63,30 @@ export default function RecommendedTours() {
   };
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-16 bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl font-bold text-center mb-12">You May Like These Tours</h2>
+        <h2 className="text-4xl font-bold text-center mb-12">
+          <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">You May Like</span> These Tours
+        </h2>
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-xl text-gray-600">Loading...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-400"></div>
+            <p className="text-xl text-gray-400 mt-4">Loading amazing tours...</p>
           </div>
         ) : recommendedTours.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-8">
             {recommendedTours.map((tour) => (
               <div
                 key={tour.id}
-                className="bg-white bg-opacity-80 backdrop-blur-lg rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition"
+                className="bg-slate-800 rounded-2xl overflow-hidden border-2 border-slate-700 hover:border-cyan-500 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/20"
               >
                 {tour.image_url ? (
-                  <div className="relative h-48">
+                  <div className="relative h-48 md:h-56 group">
                     <Image
                       src={tour.image_url}
                       alt={tour.name}
                       fill
-                      className="object-cover hover:scale-105 transition-transform duration-300"
+                      className="object-cover"
                     />
                   </div>
                 ) : (
@@ -91,23 +94,23 @@ export default function RecommendedTours() {
                     className={`h-48 bg-gradient-to-r ${categoryColors[tour.category] || 'from-blue-400 to-blue-600'}`}
                   />
                 )}
-                <div className="p-6">
+                <div className="p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-semibold text-gray-500 uppercase">
+                    <span className="text-sm font-semibold text-gray-400 uppercase">
                       {tour.category}
                     </span>
                   </div>
-                  <h3 className="text-2xl font-bold mb-3">{tour.name}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-3">
+                  <h3 className="text-xl font-bold mb-2 text-white">{tour.name}</h3>
+                  <p className="text-gray-300 mb-3 line-clamp-2 text-sm">
                     {tour.short_description}
                   </p>
-                  <div className="flex justify-between items-center">
-                    <span className={`text-2xl font-bold ${categoryPriceColors[tour.category] || 'text-blue-600'}`}>
+                  <div className="flex justify-between items-center pt-3 border-t border-slate-700">
+                    <span className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
                       {formatPrice(tour)}
                     </span>
                     <Link
                       href={`/tours/${tour.slug}`}
-                      className={`${categoryButtonColors[tour.category] || 'bg-blue-600 hover:bg-blue-700'} text-white px-6 py-2 rounded-lg transition`}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg transition-all transform hover:scale-105 shadow-lg font-semibold"
                     >
                       View Details
                     </Link>
@@ -118,7 +121,7 @@ export default function RecommendedTours() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-xl text-gray-600 mb-4">More amazing tours coming soon!</p>
+            <p className="text-xl text-gray-400 mb-4">More amazing tours coming soon!</p>
           </div>
         )}
       </div>
