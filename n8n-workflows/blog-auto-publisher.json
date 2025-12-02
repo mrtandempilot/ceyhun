@@ -1,0 +1,173 @@
+{
+    "name": "Blog Auto Publisher",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "d4b5e8f1-a2c3-4d5e-8f9a-1b2c3d4e5f6a",
+            "name": "When clicking 'Test workflow'",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://localhost:3000/api/blog/create",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "json",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "title",
+                            "value": "={{ $json.title }}"
+                        },
+                        {
+                            "name": "content",
+                            "value": "={{ $json.content }}"
+                        },
+                        {
+                            "name": "excerpt",
+                            "value": "={{ $json.excerpt }}"
+                        },
+                        {
+                            "name": "featured_image",
+                            "value": "={{ $json.featured_image }}"
+                        },
+                        {
+                            "name": "featured_image_alt",
+                            "value": "={{ $json.image_alt }}"
+                        },
+                        {
+                            "name": "author_name",
+                            "value": "={{ $json.author_name }}"
+                        },
+                        {
+                            "name": "author_avatar",
+                            "value": "={{ $json.author_avatar }}"
+                        },
+                        {
+                            "name": "categories",
+                            "value": "={{ $json.categories }}"
+                        },
+                        {
+                            "name": "tags",
+                            "value": "={{ $json.tags }}"
+                        },
+                        {
+                            "name": "meta_description",
+                            "value": "={{ $json.meta_description }}"
+                        },
+                        {
+                            "name": "status",
+                            "value": "={{ $json.status }}"
+                        },
+                        {
+                            "name": "is_featured",
+                            "value": "={{ $json.is_featured }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+            "name": "Create Blog Post",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                670,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Sample blog post data\n// Replace this with your actual data source\n\nconst blogPost = {\n  title: \"Amazing Paragliding Experience in Oludeniz\",\n  \n  content: `# An Unforgettable Flight Over the Blue Lagoon\n\nYesterday, we had the privilege of taking our guests on one of the most spectacular paragliding flights of the season. The weather was absolutely perfect - clear blue skies, gentle winds, and breathtaking views of the famous Oludeniz Blue Lagoon.\n\n## The Experience\n\nOur experienced pilot, Mehmet, guided the tandem flight with expertise and care. As we soared above the legendary Babadag Mountain at 1,969 meters, the panoramic views were simply stunning.\n\n### What Made It Special\n\n- **Perfect Weather**: Crystal clear visibility\n- **Professional Guidance**: Safety first approach\n- **Stunning Views**: 360-degree panorama of the coastline\n- **Smooth Landing**: Right on the famous Oludeniz beach\n\n## Guest Feedback\n\n\"This was the highlight of our Turkey vacation! The views were incredible and I felt completely safe the entire time.\" - Sarah from UK\n\n## Book Your Adventure\n\nIf you're visiting Oludeniz, don't miss this once-in-a-lifetime experience. Contact us to book your paragliding adventure today!\n\n**Safety Note**: All our pilots are certified professionals with years of experience. We use top-quality equipment and never compromise on safety.`,\n  \n  excerpt: \"Experience the thrill of paragliding over Oludeniz's famous Blue Lagoon. Read about our latest adventure and what makes this destination so special.\",\n  \n  featured_image: \"https://images.unsplash.com/photo-1511576661531-b34d7da5d0bb?w=1200\",\n  \n  image_alt: \"Paragliding over Oludeniz Blue Lagoon with stunning aerial views\",\n  \n  author_name: \"Captain Mehmet\",\n  \n  author_avatar: \"https://ui-avatars.com/api/?name=Captain+Mehmet&background=3B82F6&color=fff&size=200\",\n  \n  categories: [\"Adventures\", \"Tips & Guides\"],\n  \n  tags: [\"paragliding\", \"oludeniz\", \"blue-lagoon\", \"adventure-sports\", \"turkey\"],\n  \n  meta_description: \"Discover the thrill of paragliding in Oludeniz with our latest adventure story. Learn what makes this Turkish paradise perfect for tandem flights.\",\n  \n  status: \"published\",\n  \n  is_featured: true\n};\n\nreturn { json: blogPost };"
+            },
+            "id": "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e",
+            "name": "Sample Blog Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.success }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f",
+            "name": "Post Created?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                890,
+                300
+            ]
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "When clicking 'Test workflow'": {
+            "main": [
+                [
+                    {
+                        "node": "Sample Blog Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Sample Blog Data": {
+            "main": [
+                [
+                    {
+                        "node": "Create Blog Post",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Blog Post": {
+            "main": [
+                [
+                    {
+                        "node": "Post Created?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "1",
+    "id": "blog-auto-publisher",
+    "meta": {
+        "instanceId": "your-instance-id"
+    },
+    "tags": []
+}

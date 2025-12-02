@@ -1,0 +1,375 @@
+{
+  "name": "Blog Auto Publisher with AI Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "4c0b4f78-118b-4fff-82eb-21fe20a1db23",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2608,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Define your blog topic and parameters here\nconst topic = {\n  title: \"Amazing Paragliding Experience in Oludeniz\",\n  keywords: [\"paragliding\", \"oludeniz\", \"blue lagoon\", \"adventure\"],\n  categories: [\"Adventures\", \"Tips & Guides\"],\n  tags: [\"paragliding\", \"oludeniz\", \"blue-lagoon\", \"adventure-sports\", \"turkey\"],\n  author_name: \"Captain Mehmet\",\n  tone: \"enthusiastic and informative\",\n  word_count: 800\n};\n\nreturn { json: topic };"
+      },
+      "id": "309fef40-b515-45e0-ab36-e3d8d206edac",
+      "name": "Blog Topic Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2384,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a professional blog content writer. You create engaging, SEO-optimized blog posts with clear structure, compelling narratives, and practical value for readers. Always respond with valid JSON format containing title, content, excerpt, and meta_description fields."
+        }
+      },
+      "id": "b9dd5372-d294-47c7-aefd-94dabb2c3bd4",
+      "name": "AI Agent - Blog Writer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -2000,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare the prompt for the AI agent\nconst topic = $input.first().json;\n\nconst prompt = `Write a comprehensive blog post about: \"${topic.title}\"\n\nRequirements:\n- Include these keywords naturally: ${topic.keywords.join(', ')}\n- Writing tone: ${topic.tone}\n- Target word count: ${topic.word_count}+ words\n- Use markdown formatting with proper headings (##, ###)\n- Include engaging introduction and conclusion\n- Add practical tips and real experiences\n- Make it SEO-friendly\n\nProvide your response in this exact JSON format:\n{\n  \"title\": \"Engaging blog post title (can be different from the topic)\",\n  \"content\": \"Full blog post content in markdown format\",\n  \"excerpt\": \"Compelling 2-3 sentence summary for preview\",\n  \"meta_description\": \"SEO-optimized description (150-160 characters)\"\n}`;\n\nreturn { \n  json: { \n    chatInput: prompt,\n    ...topic \n  } \n};"
+      },
+      "id": "30b795d7-bd08-400e-93e9-31a5582999ba",
+      "name": "Prepare AI Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2208,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the AI agent response and prepare blog data\nconst agentResponse = $input.first().json;\nlet contentData;\n\n// Extract the response text\nconst responseText = agentResponse.output || agentResponse.text || JSON.stringify(agentResponse);\n\ntry {\n  // Try to find JSON in the response\n  const jsonMatch = responseText.match(/```json\\s*([\\s\\S]*?)\\s*```/) || \n                    responseText.match(/```\\s*([\\s\\S]*?)\\s*```/) ||\n                    responseText.match(/\\{[\\s\\S]*\\}/);\n  \n  if (jsonMatch) {\n    const jsonStr = jsonMatch[1] || jsonMatch[0];\n    contentData = JSON.parse(jsonStr);\n  } else {\n    contentData = JSON.parse(responseText);\n  }\n} catch (e) {\n  throw new Error(`Failed to parse AI response: ${e.message}\\n\\nResponse: ${responseText}`);\n}\n\n// Get the original topic data\nconst topicData = $('Prepare AI Prompt').first().json;\n\n// Combine AI-generated content with metadata\nconst blogPost = {\n  title: contentData.title,\n  content: contentData.content,\n  excerpt: contentData.excerpt,\n  featured_image: \"https://images.unsplash.com/photo-1511576661531-b34d7da5d0bb?w=1200\",\n  image_alt: `${contentData.title} - scenic view`,\n  author_name: topicData.author_name || \"Admin\",\n  author_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(topicData.author_name || 'Admin')}&background=3B82F6&color=fff&size=200`,\n  categories: topicData.categories || [\"General\"],\n  tags: topicData.tags || [],\n  meta_description: contentData.meta_description,\n  status: \"published\",\n  is_featured: true\n};\n\nreturn { json: blogPost };"
+      },
+      "id": "f0f05b32-4845-4699-9ae3-24dd2d36eeef",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1616,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c46b0b6b-e92d-443f-96c3-a2e81bd6ded6",
+              "leftValue": "={{ $json.publish_mode }}",
+              "rightValue": "live",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a049280c-660d-4e1a-8bed-c086bc8b0358",
+      "name": "Publish Mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1264,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3000/api/blog/create",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  title: $json.title,\n  content: $json.content,\n  excerpt: $json.excerpt,\n  featured_image: $json.featured_image,\n  featured_image_alt: $json.image_alt,\n  author_name: $json.author_name,\n  author_avatar: $json.author_avatar,\n  categories: $json.categories || [],\n  tags: $json.tags || [],\n  meta_description: $json.meta_description,\n  status: $json.status,\n  is_featured: $json.is_featured\n}) }}",
+        "options": {}
+      },
+      "id": "6439ca70-b5d3-4037-a6c6-e8377fe54af3",
+      "name": "Create Blog Post (Live)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -1040,
+        -304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "48tw7kzKYgTnEg1c",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.success }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "984ab3b9-4198-40f3-bc93-5f8107d4d785",
+      "name": "Post Created?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -816,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "content": "✅ Blog post published successfully!\n\n**Title:** {{ $json.post.title }}\n**URL:** {{ $json.post.url }}\n**Slug:** {{ $json.post.slug }}\n**Status:** {{ $json.post.status }}"
+      },
+      "id": "e548b3fb-065a-456e-ae9f-85320bcc4c63",
+      "name": "Success Message",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -384
+      ]
+    },
+    {
+      "parameters": {
+        "content": "❌ Failed to create blog post\n\n**Error:** {{ $json.error }}\n**Details:** {{ $json.details }}"
+      },
+      "id": "3073213f-0d46-4601-a230-e4226646ecd5",
+      "name": "Error Message",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -224
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 AI AGENT\n\nThe AI Agent orchestrates content creation by:\n1. Receiving the blog topic & requirements\n2. Using OpenRouter LLM for generation\n3. Outputting structured blog content\n\n**Model:** Claude 3.5 Sonnet via OpenRouter"
+      },
+      "id": "c602642c-3bb1-4e35-ad95-c8f8f6483c8d",
+      "name": "Agent Info",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2112,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -2016,
+        64
+      ],
+      "id": "8ef3efc9-c013-4c96-a88c-85f4d1ee327f",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "5vtbLyA68bKwKcxC",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Add publish mode flag - change this to \"live\" when ready to publish\nconst data = $input.first().json;\n\nreturn {\n  json: {\n    ...data,\n    publish_mode: \"live\"\n  }\n};"
+      },
+      "id": "8ebb36b5-1cd3-47c5-8190-8cb4e319d9ac",
+      "name": "Set Publish Mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1440,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format the blog post data for preview\nconst data = $input.first().json;\n\nconst preview = {\n  status: \"✅ Content Generated Successfully!\",\n  message: \"Blog post is ready. Change publish_mode to 'live' to publish it.\",\n  blog_data: {\n    title: data.title,\n    excerpt: data.excerpt,\n    author: data.author_name,\n    categories: data.categories,\n    tags: data.tags,\n    meta_description: data.meta_description,\n    content_length: data.content.length,\n    content_preview: data.content.substring(0, 500) + \"...\"\n  },\n  full_content: data.content\n};\n\nconsole.log(\"\\n=== GENERATED BLOG POST ===\");\nconsole.log(\"Title:\", data.title);\nconsole.log(\"Excerpt:\", data.excerpt);\nconsole.log(\"\\nContent Preview:\");\nconsole.log(data.content.substring(0, 500) + \"...\");\nconsole.log(\"\\n=== END PREVIEW ===\");\n\nreturn { json: preview };"
+      },
+      "id": "fed903e6-514a-4838-8ccd-3129e57bd502",
+      "name": "Preview Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📝 PREVIEW MODE\n\n**Current Status:** Preview Only\n\nThe workflow generates content but doesn't publish it.\n\n**To Enable Publishing:**\n1. Make sure your blog API is running at localhost:3000\n2. In \"Set Publish Mode\" node, change:\n   `publish_mode: \"preview\"` \n   to \n   `publish_mode: \"live\"`\n\n**Preview Output:**\nCheck the execution data to see the generated blog post!"
+      },
+      "id": "7755e5c5-c9ec-4765-993f-ccd6592a4597",
+      "name": "Preview Info",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1264,
+        144
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Blog Topic Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blog Topic Input": {
+      "main": [
+        [
+          {
+            "node": "Prepare AI Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Blog Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Blog Writer": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Set Publish Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Blog Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Publish Mode": {
+      "main": [
+        [
+          {
+            "node": "Publish Mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Mode?": {
+      "main": [
+        [
+          {
+            "node": "Create Blog Post (Live)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preview Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Blog Post (Live)": {
+      "main": [
+        [
+          {
+            "node": "Post Created?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9f21a447-41c0-4f3c-8b54-dc5cbe2b7bf2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8d28a9671075f0b5891a19de3804cee75b0d422edb952b37771a7916cd08431c"
+  },
+  "id": "13zESFZYhXwWZvWy",
+  "tags": []
+}

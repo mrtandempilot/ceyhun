@@ -114,6 +114,9 @@ export default function Navbar() {
                 </div>
               )}
             </div>
+            <Link href="/blog" className="hover:text-blue-200 transition">
+              Blog
+            </Link>
             {user && user.email === 'mrtandempilot@gmail.com' && (
               <>
                 <Link href="/dashboard" className="hover:text-blue-200 transition">
@@ -133,7 +136,7 @@ export default function Navbar() {
             <Link href="/contact" className="hover:text-blue-200 transition">
               Contact
             </Link>
-            
+
             {!loading && (
               <>
                 {user ? (
@@ -232,6 +235,13 @@ export default function Navbar() {
                 </div>
               )}
             </div>
+            <Link
+              href="/blog"
+              className="block py-2 hover:text-blue-200 transition"
+              onClick={() => setIsOpen(false)}
+            >
+              Blog
+            </Link>
             {user && user.email === 'mrtandempilot@gmail.com' && (
               <>
                 <Link
@@ -271,7 +281,7 @@ export default function Navbar() {
             >
               Contact
             </Link>
-            
+
             {!loading && (
               <>
                 {user ? (

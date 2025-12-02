@@ -1,0 +1,237 @@
+{
+    "name": "AI Blog Generator (OpenRouter)",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "trigger-1",
+            "name": "When clicking 'Test workflow'",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Define your blog topic and parameters\nreturn {\n  json: {\n    topic: \"paragliding safety tips for beginners\",\n    tone: \"informative and friendly\",\n    target_audience: \"people interested in paragliding\",\n    keywords: [\"paragliding\", \"safety\", \"oludeniz\", \"beginners\"],\n    category: \"Safety\",\n    tags: [\"paragliding\", \"safety\", \"tips\", \"beginners\"]\n  }\n};"
+            },
+            "id": "code-1",
+            "name": "Blog Topic Settings",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://openrouter.ai/api/v1/chat/completions",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "openRouterApi",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $credentials.apiKey }}"
+                        },
+                        {
+                            "name": "HTTP-Referer",
+                            "value": "https://oludeniz-tours.com"
+                        },
+                        {
+                            "name": "X-Title",
+                            "value": "Oludeniz Tours Blog Generator"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "json",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "model",
+                            "value": "anthropic/claude-3.5-sonnet"
+                        },
+                        {
+                            "name": "messages",
+                            "value": "={{ [{\"role\": \"user\", \"content\": `You are a professional travel and adventure blog writer for Oludeniz Tours, a paragliding company in Turkey.\n\nWrite a comprehensive blog post about: ${$json.topic}\n\nRequirements:\n- Tone: ${$json.tone}\n- Target audience: ${$json.target_audience}\n- Include these keywords naturally: ${$json.keywords.join(', ')}\n- Use markdown formatting (headers, lists, bold, etc.)\n- Length: 800-1000 words\n- Include practical tips and actionable advice\n- Make it engaging and SEO-friendly\n\nProvide the output as a valid JSON object with these exact fields:\n{\n  \"title\": \"engaging blog post title (max 60 characters)\",\n  \"excerpt\": \"compelling summary (150-160 characters)\",\n  \"content\": \"full blog post content in markdown format\",\n  \"meta_description\": \"SEO meta description (150-160 characters)\"\n}\n\nIMPORTANT: Return ONLY the JSON object, no additional text.`}] }}"
+                        },
+                        {
+                            "name": "temperature",
+                            "value": 0.7
+                        },
+                        {
+                            "name": "max_tokens",
+                            "value": 2000
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "http-1",
+            "name": "Generate with OpenRouter",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                640,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse OpenRouter response and extract blog content\nconst response = $input.item.json;\nconst aiContent = response.choices[0].message.content;\n\n// Parse the JSON from AI response\nlet blogData;\ntry {\n  blogData = JSON.parse(aiContent);\n} catch (error) {\n  // If AI didn't return pure JSON, try to extract it\n  const jsonMatch = aiContent.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    blogData = JSON.parse(jsonMatch[0]);\n  } else {\n    throw new Error('Could not parse AI response as JSON');\n  }\n}\n\n// Get original topic settings\nconst topicData = $('Blog Topic Settings').item.json;\n\n// Combine AI content with topic settings\nreturn {\n  json: {\n    title: blogData.title,\n    content: blogData.content,\n    excerpt: blogData.excerpt,\n    featured_image: \"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200\",\n    featured_image_alt: blogData.title,\n    author_name: \"AI Content Team\",\n    author_avatar: \"https://ui-avatars.com/api/?name=AI+Team&background=6366F1&color=fff&size=200\",\n    categories: [topicData.category],\n    tags: topicData.tags,\n    meta_description: blogData.meta_description,\n    status: \"published\",\n    is_featured: false\n  }\n};"
+            },
+            "id": "code-2",
+            "name": "Format Blog Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                840,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://localhost:3000/api/blog/create",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "json",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "title",
+                            "value": "={{ $json.title }}"
+                        },
+                        {
+                            "name": "content",
+                            "value": "={{ $json.content }}"
+                        },
+                        {
+                            "name": "excerpt",
+                            "value": "={{ $json.excerpt }}"
+                        },
+                        {
+                            "name": "featured_image",
+                            "value": "={{ $json.featured_image }}"
+                        },
+                        {
+                            "name": "featured_image_alt",
+                            "value": "={{ $json.featured_image_alt }}"
+                        },
+                        {
+                            "name": "author_name",
+                            "value": "={{ $json.author_name }}"
+                        },
+                        {
+                            "name": "author_avatar",
+                            "value": "={{ $json.author_avatar }}"
+                        },
+                        {
+                            "name": "categories",
+                            "value": "={{ $json.categories }}"
+                        },
+                        {
+                            "name": "tags",
+                            "value": "={{ $json.tags }}"
+                        },
+                        {
+                            "name": "meta_description",
+                            "value": "={{ $json.meta_description }}"
+                        },
+                        {
+                            "name": "status",
+                            "value": "={{ $json.status }}"
+                        },
+                        {
+                            "name": "is_featured",
+                            "value": "={{ $json.is_featured }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "http-2",
+            "name": "Create Blog Post",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1040,
+                300
+            ]
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "When clicking 'Test workflow'": {
+            "main": [
+                [
+                    {
+                        "node": "Blog Topic Settings",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Blog Topic Settings": {
+            "main": [
+                [
+                    {
+                        "node": "Generate with OpenRouter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate with OpenRouter": {
+            "main": [
+                [
+                    {
+                        "node": "Format Blog Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Blog Data": {
+            "main": [
+                [
+                    {
+                        "node": "Create Blog Post",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "1",
+    "id": "ai-blog-generator-openrouter",
+    "meta": {
+        "instanceId": "your-instance-id"
+    },
+    "tags": []
+}
