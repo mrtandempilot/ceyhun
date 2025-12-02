@@ -85,12 +85,11 @@ export default function Home() {
         {/* Hero content */}
         <div className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] text-center px-4">
           <h1 className="text-5xl md:text-7xl font-extrabold mb-6">
-            Epic{' '}
             <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              Adventure
+              Skywalkers
             </span>{' '}
             <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-              Tours
+              Paragliding
             </span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-300 mb-10 max-w-3xl">
