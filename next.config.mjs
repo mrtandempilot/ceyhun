@@ -31,6 +31,12 @@ const nextConfig = {
         port: '',
         pathname: '/api/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'xcmag.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
