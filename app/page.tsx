@@ -76,11 +76,11 @@ export default function Home() {
           src="/hero-bg.jpg"
           alt="Adventure destinations"
           fill
-          className="object-cover opacity-40"
+          className="object-cover opacity-70"
           priority
         />
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/40 to-slate-900" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-slate-900/20 to-slate-900" />
 
         {/* Hero content */}
         <div className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] text-center px-4">
