@@ -14,6 +14,10 @@ export const metadata: Metadata = {
     },
 };
 
+// Force dynamic rendering - always fetch fresh data
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getBlogPosts(page: number = 1) {
     try {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
