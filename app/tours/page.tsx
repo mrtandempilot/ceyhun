@@ -184,21 +184,21 @@ export default function ToursPage() {
                   </div>
 
                   {/* Card Content */}
-                  <div className="p-6">
+                  <div className="p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm font-semibold text-gray-400 uppercase">
                         {tour.category}
                       </span>
                     </div>
-                    <h3 className="text-2xl font-bold mb-2 text-white">{tour.name}</h3>
-                    <p className={`${feature.color} text-sm mb-3 line-clamp-2`}>
+                    <h3 className="text-xl font-bold mb-1 text-white">{tour.name}</h3>
+                    <p className={`${feature.color} text-sm mb-2 line-clamp-2`}>
                       {tour.short_description}
                     </p>
 
                     {/* Includes section */}
                     {tour.included && tour.included.length > 0 && (
-                      <div className="mb-4">
-                        <h4 className="font-semibold text-white mb-2 text-sm">Includes:</h4>
+                      <div className="mb-3">
+                        <h4 className="font-semibold text-white mb-1 text-sm">Includes:</h4>
                         <ul className="text-sm text-gray-400 space-y-1">
                           {tour.included.slice(0, 3).map((item: string, idx: number) => (
                             <li key={idx} className="flex items-start">
@@ -216,9 +216,9 @@ export default function ToursPage() {
                     )}
 
                     {/* Price and Feature */}
-                    <div className="flex justify-between items-center mb-4 pt-4 border-t border-slate-700">
+                    <div className="flex justify-between items-center mb-3 pt-3 border-t border-slate-700">
                       <div>
-                        <span className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                        <span className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
                           {formatPrice(tour)}
                         </span>
                         {tour.price_child && (
@@ -231,7 +231,7 @@ export default function ToursPage() {
                     </div>
 
                     {/* Rating and Difficulty */}
-                    <div className="flex justify-between items-center mb-4 text-sm">
+                    <div className="flex justify-between items-center mb-3 text-sm">
                       <div className="flex items-center gap-1">
                         <span className="text-yellow-400">⭐</span>
                         <span className="text-white font-semibold">4.{7 + (index % 3)}</span>
@@ -246,7 +246,7 @@ export default function ToursPage() {
                     {/* Book button */}
                     <Link
                       href={`/tours/${tour.slug}`}
-                      className="w-full block text-center bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
+                      className="w-full block text-center bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
                     >
                       🛒 View Details
                     </Link>
