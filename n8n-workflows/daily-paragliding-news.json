@@ -1,5 +1,5 @@
 {
-    "name": "Daily News with Smart Images",
+    "name": "Daily News - Multiple Sources",
     "nodes": [
         {
             "parameters": {
@@ -25,8 +25,22 @@
                 "url": "https://www.xcmag.com/feed/",
                 "options": {}
             },
-            "id": "rss-feed",
-            "name": "Fetch Paragliding News RSS",
+            "id": "rss-xcmag",
+            "name": "Cross Country Magazine",
+            "type": "n8n-nodes-base.rssFeedRead",
+            "typeVersion": 1,
+            "position": [
+                440,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://www.flyparagliding.com/feed/",
+                "options": {}
+            },
+            "id": "rss-flypara",
+            "name": "Fly Paragliding",
             "type": "n8n-nodes-base.rssFeedRead",
             "typeVersion": 1,
             "position": [
@@ -36,15 +50,57 @@
         },
         {
             "parameters": {
-                "jsCode": "// Get the latest article\nconst items = $input.all();\n\nif (items.length === 0) {\n  throw new Error('No articles found in RSS feed');\n}\n\n// Sort by date and get most recent\nconst sorted = items.sort((a, b) => {\n  const dateA = new Date(a.json.pubDate || a.json.isoDate || 0);\n  const dateB = new Date(b.json.pubDate || b.json.isoDate || 0);\n  return dateB - dateA;\n});\n\nconst article = sorted[0].json;\n\n// Extract main keyword from title for image search\nconst keywords = article.title.toLowerCase();\nlet searchTerm = 'paragliding';\n\nif (keywords.includes('competition') || keywords.includes('race')) {\n  searchTerm = 'paragliding competition';\n} else if (keywords.includes('safety')) {\n  searchTerm = 'paragliding safety';\n} else if (keywords.includes('wing') || keywords.includes('glider')) {\n  searchTerm = 'paragliding equipment';\n} else if (keywords.includes('alps') || keywords.includes('mountain')) {\n  searchTerm = 'paragliding alps';\n} else {\n  searchTerm = 'paragliding adventure';\n}\n\nreturn {\n  json: {\n    original_title: article.title,\n    original_content: article.content || article.contentSnippet || article.description,\n    source_url: article.link,\n    source_name: 'Cross Country Magazine',\n    image_search_term: searchTerm\n  }\n};"
+                "url": "https://www.flyozone.com/blog/feed/",
+                "options": {}
+            },
+            "id": "rss-ozone",
+            "name": "Ozone Blog",
+            "type": "n8n-nodes-base.rssFeedRead",
+            "typeVersion": 1,
+            "position": [
+                440,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://www.gingliders.com/feed/",
+                "options": {}
+            },
+            "id": "rss-gin",
+            "name": "Gin Gliders",
+            "type": "n8n-nodes-base.rssFeedRead",
+            "typeVersion": 1,
+            "position": [
+                440,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "mode": "combine",
+                "combineBy": "combineAll"
+            },
+            "id": "merge-feeds",
+            "name": "Merge All Sources",
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3,
+            "position": [
+                640,
+                350
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Get the latest article from ALL sources\nconst items = $input.all();\n\nif (items.length === 0) {\n  throw new Error('No articles found in any RSS feed');\n}\n\n// Sort by date and get most recent from ANY source\nconst sorted = items.sort((a, b) => {\n  const dateA = new Date(a.json.pubDate || a.json.isoDate || 0);\n  const dateB = new Date(b.json.pubDate || b.json.isoDate || 0);\n  return dateB - dateA;\n});\n\nconst article = sorted[0].json;\n\n// Detect source name from link\nlet sourceName = 'Paragliding News';\nif (article.link.includes('xcmag')) sourceName = 'Cross Country Magazine';\nelse if (article.link.includes('flyparagliding')) sourceName = 'Fly Paragliding';\nelse if (article.link.includes('ozone')) sourceName = 'Ozone Paragliders';\nelse if (article.link.includes('gin')) sourceName = 'Gin Gliders';\n\n// Extract keywords for image search\nconst keywords = article.title.toLowerCase();\nlet searchTerm = 'paragliding';\n\nif (keywords.includes('competition') || keywords.includes('race') || keywords.includes('x-alps')) {\n  searchTerm = 'paragliding competition';\n} else if (keywords.includes('safety') || keywords.includes('accident')) {\n  searchTerm = 'paragliding safety';\n} else if (keywords.includes('wing') || keywords.includes('glider')) {\n  searchTerm = 'paragliding equipment';\n} else if (keywords.includes('alps') || keywords.includes('mountain')) {\n  searchTerm = 'paragliding alps mountains';\n} else if (keywords.includes('acro') || keywords.includes('trick')) {\n  searchTerm = 'paragliding acrobatics';\n} else {\n  searchTerm = 'paragliding adventure';\n}\n\nreturn {\n  json: {\n    original_title: article.title,\n    original_content: article.content || article.contentSnippet || article.description,\n    source_url: article.link,\n    source_name: sourceName,\n    image_search_term: searchTerm\n  }\n};"
             },
             "id": "process-article",
-            "name": "Get Latest Article",
+            "name": "Pick Latest from Any Source",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                640,
-                300
+                840,
+                350
             ]
         },
         {
@@ -66,21 +122,21 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.2,
             "position": [
-                840,
-                300
+                1040,
+                350
             ]
         },
         {
             "parameters": {
-                "jsCode": "// Get Unsplash image or fallback\nconst unsplash = $input.first().json;\nconst article = $('Get Latest Article').first().json;\n\nlet imageUrl = 'https://images.unsplash.com/photo-1511576661531-b34d7da5d0bb?w=1200';\n\nif (unsplash.results && unsplash.results.length > 0) {\n  imageUrl = unsplash.results[0].urls.regular;\n}\n\nreturn {\n  json: {\n    ...article,\n    image_url: imageUrl\n  }\n};"
+                "jsCode": "// Get Unsplash image or fallback\nconst unsplash = $input.first().json;\nconst article = $('Pick Latest from Any Source').first().json;\n\nlet imageUrl = 'https://images.unsplash.com/photo-1511576661531-b34d7da5d0bb?w=1200';\n\nif (unsplash.results && unsplash.results.length > 0) {\n  imageUrl = unsplash.results[0].urls.regular;\n}\n\nreturn {\n  json: {\n    ...article,\n    image_url: imageUrl\n  }\n};"
             },
-            "id": "extract-image",
+            "id": "get-image",
             "name": "Get Image URL",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                1040,
-                300
+                1240,
+                350
             ]
         },
         {
@@ -131,8 +187,8 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.2,
             "position": [
-                1240,
-                300
+                1440,
+                350
             ],
             "credentials": {
                 "openRouterApi": {
@@ -150,8 +206,8 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                1440,
-                300
+                1640,
+                350
             ]
         },
         {
@@ -228,8 +284,8 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.2,
             "position": [
-                1640,
-                300
+                1840,
+                350
             ]
         }
     ],
@@ -238,25 +294,84 @@
             "main": [
                 [
                     {
-                        "node": "Fetch Paragliding News RSS",
+                        "node": "Cross Country Magazine",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Fly Paragliding",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Ozone Blog",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Gin Gliders",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Fetch Paragliding News RSS": {
+        "Cross Country Magazine": {
             "main": [
                 [
                     {
-                        "node": "Get Latest Article",
+                        "node": "Merge All Sources",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Get Latest Article": {
+        "Fly Paragliding": {
+            "main": [
+                [
+                    {
+                        "node": "Merge All Sources",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Ozone Blog": {
+            "main": [
+                [
+                    {
+                        "node": "Merge All Sources",
+                        "type": "main",
+                        "index": 2
+                    }
+                ]
+            ]
+        },
+        "Gin Gliders": {
+            "main": [
+                [
+                    {
+                        "node": "Merge All Sources",
+                        "type": "main",
+                        "index": 3
+                    }
+                ]
+            ]
+        },
+        "Merge All Sources": {
+            "main": [
+                [
+                    {
+                        "node": "Pick Latest from Any Source",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Pick Latest from Any Source": {
             "main": [
                 [
                     {
