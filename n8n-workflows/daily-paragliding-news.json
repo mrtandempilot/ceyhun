@@ -1,0 +1,325 @@
+{
+    "name": "Daily News with Smart Images",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "triggerAtHour": 9
+                        }
+                    ]
+                }
+            },
+            "id": "schedule-trigger",
+            "name": "Every Day at 9 AM Turkish",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://www.xcmag.com/feed/",
+                "options": {}
+            },
+            "id": "rss-feed",
+            "name": "Fetch Paragliding News RSS",
+            "type": "n8n-nodes-base.rssFeedRead",
+            "typeVersion": 1,
+            "position": [
+                440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Get the latest article\nconst items = $input.all();\n\nif (items.length === 0) {\n  throw new Error('No articles found in RSS feed');\n}\n\n// Sort by date and get most recent\nconst sorted = items.sort((a, b) => {\n  const dateA = new Date(a.json.pubDate || a.json.isoDate || 0);\n  const dateB = new Date(b.json.pubDate || b.json.isoDate || 0);\n  return dateB - dateA;\n});\n\nconst article = sorted[0].json;\n\n// Extract main keyword from title for image search\nconst keywords = article.title.toLowerCase();\nlet searchTerm = 'paragliding';\n\nif (keywords.includes('competition') || keywords.includes('race')) {\n  searchTerm = 'paragliding competition';\n} else if (keywords.includes('safety')) {\n  searchTerm = 'paragliding safety';\n} else if (keywords.includes('wing') || keywords.includes('glider')) {\n  searchTerm = 'paragliding equipment';\n} else if (keywords.includes('alps') || keywords.includes('mountain')) {\n  searchTerm = 'paragliding alps';\n} else {\n  searchTerm = 'paragliding adventure';\n}\n\nreturn {\n  json: {\n    original_title: article.title,\n    original_content: article.content || article.contentSnippet || article.description,\n    source_url: article.link,\n    source_name: 'Cross Country Magazine',\n    image_search_term: searchTerm\n  }\n};"
+            },
+            "id": "process-article",
+            "name": "Get Latest Article",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                640,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "=https://api.unsplash.com/search/photos?query={{ $json.image_search_term }}&per_page=1&orientation=landscape",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Client-ID 5Y8IjNUO-cPfLumpleRCDn-QQ3bqmh_2S8vqu00ZZ7w"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "unsplash-search",
+            "name": "Search Unsplash",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                840,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Get Unsplash image or fallback\nconst unsplash = $input.first().json;\nconst article = $('Get Latest Article').first().json;\n\nlet imageUrl = 'https://images.unsplash.com/photo-1511576661531-b34d7da5d0bb?w=1200';\n\nif (unsplash.results && unsplash.results.length > 0) {\n  imageUrl = unsplash.results[0].urls.regular;\n}\n\nreturn {\n  json: {\n    ...article,\n    image_url: imageUrl\n  }\n};"
+            },
+            "id": "extract-image",
+            "name": "Get Image URL",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1040,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://openrouter.ai/api/v1/chat/completions",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "openRouterApi",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $credentials.apiKey }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "json",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "model",
+                            "value": "anthropic/claude-3.5-sonnet"
+                        },
+                        {
+                            "name": "messages",
+                            "value": "={{ [{\"role\": \"user\", \"content\": `You are a professional paragliding content writer for Oludeniz Tours in Turkey.\n\nRewrite this paragliding article for our blog:\n\nTitle: ${$json.original_title}\nContent: ${$json.original_content}\nSource: ${$json.source_name}\n\nRequirements:\n- Create NEW engaging title (max 60 chars)\n- Completely rewrite in 600-800 words with markdown formatting\n- Add Oludeniz/Turkey perspective when relevant\n- SEO-optimize with keywords: paragliding, oludeniz, turkey, babadag\n- Make engaging for adventure travelers\n- Categorize as ONE of: Safety, Gear & Equipment, Events, Industry News, Tips & Guides\n\nRespond with ONLY valid JSON (no markdown code blocks):\n{\n  \"title\": \"engaging title here\",\n  \"content\": \"full article in markdown\",\n  \"excerpt\": \"2-sentence preview\",\n  \"category\": \"one category\",\n  \"tags\": [\"tag1\", \"tag2\", \"tag3\"],\n  \"meta_description\": \"150-160 char SEO description\"\n}`}] }}"
+                        },
+                        {
+                            "name": "temperature",
+                            "value": 0.7
+                        },
+                        {
+                            "name": "max_tokens",
+                            "value": 2000
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "ai-rewrite",
+            "name": "AI Rewrite Article",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1240,
+                300
+            ],
+            "credentials": {
+                "openRouterApi": {
+                    "id": "5vtbLyA68bKwKcxC",
+                    "name": "OpenRouter account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse AI response\nconst response = $input.first().json;\nconst article = $('Get Image URL').first().json;\n\nconst aiContent = response.choices[0].message.content;\n\nlet blogData;\ntry {\n  let cleaned = aiContent.trim();\n  if (cleaned.startsWith('```')) {\n    cleaned = cleaned.replace(/```json\\s*/g, '').replace(/```\\s*/g, '');\n  }\n  blogData = JSON.parse(cleaned);\n} catch (error) {\n  const match = aiContent.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    blogData = JSON.parse(match[0]);\n  } else {\n    throw new Error('Could not parse AI response: ' + error.message);\n  }\n}\n\nconst contentWithSource = blogData.content + `\\n\\n---\\n\\n*Source: [${article.source_name}](${article.source_url})*`;\n\nreturn {\n  json: {\n    title: blogData.title,\n    content: contentWithSource,\n    excerpt: blogData.excerpt,\n    featured_image: article.image_url,\n    featured_image_alt: blogData.title,\n    author_name: 'Oludeniz Tours Team',\n    author_avatar: 'https://ui-avatars.com/api/?name=Oludeniz+Tours&background=3B82F6&color=fff&size=200',\n    categories: [blogData.category],\n    tags: blogData.tags || ['paragliding', 'news'],\n    meta_description: blogData.meta_description,\n    status: 'published',\n    is_featured: false\n  }\n};"
+            },
+            "id": "format-post",
+            "name": "Format Blog Post",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://ceyhun.vercel.app/api/blog/create",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "json",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "title",
+                            "value": "={{ $json.title }}"
+                        },
+                        {
+                            "name": "content",
+                            "value": "={{ $json.content }}"
+                        },
+                        {
+                            "name": "excerpt",
+                            "value": "={{ $json.excerpt }}"
+                        },
+                        {
+                            "name": "featured_image",
+                            "value": "={{ $json.featured_image }}"
+                        },
+                        {
+                            "name": "featured_image_alt",
+                            "value": "={{ $json.featured_image_alt }}"
+                        },
+                        {
+                            "name": "author_name",
+                            "value": "={{ $json.author_name }}"
+                        },
+                        {
+                            "name": "author_avatar",
+                            "value": "={{ $json.author_avatar }}"
+                        },
+                        {
+                            "name": "categories",
+                            "value": "={{ $json.categories }}"
+                        },
+                        {
+                            "name": "tags",
+                            "value": "={{ $json.tags }}"
+                        },
+                        {
+                            "name": "meta_description",
+                            "value": "={{ $json.meta_description }}"
+                        },
+                        {
+                            "name": "status",
+                            "value": "={{ $json.status }}"
+                        },
+                        {
+                            "name": "is_featured",
+                            "value": "={{ $json.is_featured }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "publish",
+            "name": "Publish to Blog",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1640,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Every Day at 9 AM Turkish": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Paragliding News RSS",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Paragliding News RSS": {
+            "main": [
+                [
+                    {
+                        "node": "Get Latest Article",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Latest Article": {
+            "main": [
+                [
+                    {
+                        "node": "Search Unsplash",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Search Unsplash": {
+            "main": [
+                [
+                    {
+                        "node": "Get Image URL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Image URL": {
+            "main": [
+                [
+                    {
+                        "node": "AI Rewrite Article",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Rewrite Article": {
+            "main": [
+                [
+                    {
+                        "node": "Format Blog Post",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Blog Post": {
+            "main": [
+                [
+                    {
+                        "node": "Publish to Blog",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "timezone": "Europe/Istanbul",
+        "executionOrder": "v1"
+    },
+    "versionId": "1",
+    "meta": {
+        "instanceId": "your-instance-id"
+    },
+    "tags": []
+}
