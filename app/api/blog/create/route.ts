@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
             author_avatar: body.author_avatar || null,
             author_bio: body.author_bio || null,
             status: body.status || 'published',
+            visibility: body.visibility || 'public',
             meta_description: body.meta_description || body.excerpt || null,
             meta_keywords: body.meta_keywords || null,
             og_image: body.og_image || body.featured_image || null,

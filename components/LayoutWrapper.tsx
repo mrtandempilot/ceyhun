@@ -43,12 +43,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           <Footer />
         </>
       ) : isAdmin ? (
-        <div className="flex">
-          <QuickActions />
-          <div className="flex-1">
-            {children}
-          </div>
-        </div>
+        <>
+          {children}
+        </>
       ) : (
         <>
           {children}

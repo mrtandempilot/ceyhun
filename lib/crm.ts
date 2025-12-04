@@ -489,11 +489,11 @@ export async function getWhatsAppStats() {
     const lastActivity = recentMessage?.created_at || null;
     const lastActivityFormatted = lastActivity
       ? new Date(lastActivity).toLocaleString('en-US', {
-          minute: '2-digit',
-          hour: '2-digit',
-          day: '2-digit',
-          month: 'short'
-        })
+        minute: '2-digit',
+        hour: '2-digit',
+        day: '2-digit',
+        month: 'short'
+      })
       : 'No recent activity';
 
     return {
@@ -622,6 +622,85 @@ export async function getChatBotStats() {
   }
 }
 
+export async function getBlogStats() {
+  try {
+    console.log('🔍 Fetching blog stats...');
+
+    // First, let's check if posts table exists and has any data
+    const { data: allPosts, error: checkError } = await supabase
+      .from('posts')
+      .select('id, title, status, visibility, published_at, created_at')
+      .limit(50); // Increased limit to see all your posts
+
+    if (checkError) {
+      console.error('❌ Error checking posts:', checkError);
+      console.error('❌ This likely means the posts table does not exist or has RLS issues');
+      return {
+        totalPosts: 0,
+        postsToday: 0,
+        debug: { error: checkError.message }
+      };
+    }
+
+    console.log('🔍 All posts in database:', allPosts);
+    console.log('🔍 Total posts found:', allPosts?.length || 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get total published posts (following the same criteria as the blog API)
+    const { count: totalPosts, error: countError } = await supabase
+      .from('posts')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'published')
+      .or('visibility.is.null,visibility.eq.public');
+
+    if (countError) {
+      console.error('❌ Error counting total posts:', countError);
+    } else {
+      console.log('✅ Total published posts count:', totalPosts);
+    }
+
+    // Get posts published today
+    const { count: postsToday, error: todayError } = await supabase
+      .from('posts')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'published')
+      .or('visibility.is.null,visibility.eq.public')
+      .gte('published_at', today.toISOString())
+      .lte('published_at', today.toISOString().replace('T00:00:00.000Z', 'T23:59:59.999Z'));
+
+    if (todayError) {
+      console.error('❌ Error counting posts today:', todayError);
+    } else {
+      console.log('✅ Posts published today:', postsToday);
+    }
+
+    const result = {
+      totalPosts: totalPosts || 0,
+      postsToday: postsToday || 0,
+      debug: {
+        totalPostsInQuery: allPosts?.length || 0,
+        totalPublished: totalPosts || 0,
+        todaysPosts: postsToday || 0,
+        allPosts: allPosts,
+        hasCountError: !!countError,
+        hasTodayError: !!todayError
+      }
+    };
+
+    console.log('🎯 Final blog stats result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Critical error fetching blog stats:', error);
+    return {
+      totalPosts: 0,
+      postsToday: 0,
+      debug: { criticalError: error instanceof Error ? error.message : 'Unknown error' }
+    };
+  }
+}
+
 // ============================================
 // UPCOMING BOOKINGS
 // ============================================
@@ -656,8 +735,8 @@ export async function getUpcomingBookings(limit: number = 5) {
 
     console.log('🔍 Upcoming Bookings: Raw data from database:', bookings);
 
-        // Format the data for display
-        const formattedBookings = bookings?.map((booking: any) => ({
+    // Format the data for display
+    const formattedBookings = bookings?.map((booking: any) => ({
       id: booking.id,
       customer_name: booking.customer_name,
       tour_name: booking.tour_name,
