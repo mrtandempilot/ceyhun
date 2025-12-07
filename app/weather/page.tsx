@@ -153,7 +153,8 @@ export default function WeatherPage() {
 
                                     {/* Area under curve */}
                                     <path
-                                        d={`M 0,100 ${hourlyTemps.slice(0, 4).map((h: any, i: number) => {
+                                        d={`M 0,100 ${[6, 12, 18, 23].map((hourIndex, i) => {
+                                            const h = hourlyTemps[hourIndex] || hourlyTemps[i] || { temp: current.temp };
                                             const x = (i / 3) * 400;
                                             const y = 100 - ((h.temp - minTemp) / (maxTemp - minTemp)) * 80;
                                             return `L ${x},${y}`;
@@ -163,7 +164,8 @@ export default function WeatherPage() {
 
                                     {/* Line */}
                                     <path
-                                        d={`M ${hourlyTemps.slice(0, 4).map((h: any, i: number) => {
+                                        d={`M ${[6, 12, 18, 23].map((hourIndex, i) => {
+                                            const h = hourlyTemps[hourIndex] || hourlyTemps[i] || { temp: current.temp };
                                             const x = (i / 3) * 400;
                                             const y = 100 - ((h.temp - minTemp) / (maxTemp - minTemp)) * 80;
                                             return `${x},${y}`;
@@ -171,11 +173,11 @@ export default function WeatherPage() {
                                         stroke="#fbbf24"
                                         strokeWidth="3"
                                         fill="none"
-                                        className="animate-pulse"
                                     />
 
                                     {/* Points */}
-                                    {hourlyTemps.slice(0, 4).map((h: any, i: number) => {
+                                    {[6, 12, 18, 23].map((hourIndex, i) => {
+                                        const h = hourlyTemps[hourIndex] || hourlyTemps[i] || { temp: current.temp };
                                         const x = (i / 3) * 400;
                                         const y = 100 - ((h.temp - minTemp) / (maxTemp - minTemp)) * 80;
                                         return (
@@ -185,7 +187,6 @@ export default function WeatherPage() {
                                                 cy={y}
                                                 r="4"
                                                 fill="#fbbf24"
-                                                className="animate-pulse"
                                             />
                                         );
                                     })}
@@ -257,6 +258,59 @@ export default function WeatherPage() {
                                         );
                                     })}
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* 4-Day Forecast */}
+                        <div className="bg-gray-800/50 backdrop-blur-xl rounded-3xl p-6 border border-gray-700/50">
+                            <h3 className="text-xl font-semibold mb-4">4-Day Forecast</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {weekForecast.slice(0, 4).map((day: any, index: number) => {
+                                    const date = new Date(day.dt * 1000);
+                                    const dayName = index === 0 ? 'Today' : date.toLocaleDateString('en-US', { weekday: 'short' });
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            className="bg-gray-700/30 rounded-2xl p-5 hover:bg-gray-700/50 transition-all hover:scale-105"
+                                        >
+                                            <div className="text-center">
+                                                <div className="text-sm font-semibold text-gray-300 mb-3">{dayName}</div>
+                                                <div className="text-lg text-gray-400 mb-3">
+                                                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                </div>
+
+                                                <div className="text-5xl mb-3">
+                                                    {day.weather[0].main.includes('Cloud') ? '☁️' :
+                                                        day.weather[0].main.includes('Rain') ? '🌧️' :
+                                                            day.weather[0].main.includes('Clear') ? '☀️' : '⛅'}
+                                                </div>
+
+                                                <div className="text-sm text-gray-400 capitalize mb-3">
+                                                    {day.weather[0].description}
+                                                </div>
+
+                                                <div className="flex items-center justify-center gap-2 mb-3">
+                                                    <span className="text-2xl font-bold">{Math.round(day.temp.max)}°</span>
+                                                    <span className="text-lg text-gray-500">{Math.round(day.temp.min)}°</span>
+                                                </div>
+
+                                                <div className="flex items-center justify-center gap-3 text-xs text-gray-400">
+                                                    <div className="flex items-center gap-1">
+                                                        <span>💨</span>
+                                                        <span>{msToKmh(day.wind_speed)}</span>
+                                                    </div>
+                                                    {day.pop > 0.1 && (
+                                                        <div className="flex items-center gap-1">
+                                                            <span>💧</span>
+                                                            <span>{Math.round(day.pop * 100)}%</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
