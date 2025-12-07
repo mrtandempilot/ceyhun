@@ -70,8 +70,8 @@ export async function GET(request: NextRequest) {
       clouds: day.day.cloud || 0,
       pop: day.day.daily_chance_of_rain / 100,
       uvi: day.day.uv,
-      sunrise: new Date(`${day.date} ${day.astro.sunrise}`).getTime() / 1000,
-      sunset: new Date(`${day.date} ${day.astro.sunset}`).getTime() / 1000,
+      sunrise: parseSunTime(day.date, day.astro.sunrise, location.tz_id),
+      sunset: parseSunTime(day.date, day.astro.sunset, location.tz_id),
       moon_phase: getMoonPhaseValue(day.astro.moon_phase),
     }));
 
@@ -82,8 +82,8 @@ export async function GET(request: NextRequest) {
       timezone: location.tz_id,
       current: {
         dt: current.last_updated_epoch,
-        sunrise: new Date(`${forecast[0].date} ${forecast[0].astro.sunrise}`).getTime() / 1000,
-        sunset: new Date(`${forecast[0].date} ${forecast[0].astro.sunset}`).getTime() / 1000,
+        sunrise: parseSunTime(forecast[0].date, forecast[0].astro.sunrise, location.tz_id),
+        sunset: parseSunTime(forecast[0].date, forecast[0].astro.sunset, location.tz_id),
         temp: current.temp_c,
         feels_like: current.feelslike_c,
         pressure: current.pressure_mb,
@@ -198,4 +198,26 @@ function getWeatherIcon(code: number, isDay: boolean): string {
   if ([1087, 1273, 1276, 1279, 1282].includes(code)) return `11${dayNight}`; // Thunderstorm
 
   return `01${dayNight}`; // Default to clear
+}
+
+// Helper function to parse sunrise/sunset times from WeatherAPI
+// WeatherAPI returns times like "08:00 AM" or "06:30 PM"
+function parseSunTime(date: string, time: string, timezone: string): number {
+  // Parse the time string (e.g., "08:00 AM")
+  const [timePart, period] = time.split(' ');
+  const [hours, minutes] = timePart.split(':').map(Number);
+
+  // Convert to 24-hour format
+  let hour24 = hours;
+  if (period === 'PM' && hours !== 12) {
+    hour24 = hours + 12;
+  } else if (period === 'AM' && hours === 12) {
+    hour24 = 0;
+  }
+
+  // Create date object with the parsed time
+  // Format: YYYY-MM-DD
+  const dateTime = new Date(`${date}T${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`);
+
+  return Math.floor(dateTime.getTime() / 1000);
 }
