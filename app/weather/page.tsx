@@ -196,19 +196,19 @@ export default function WeatherPage() {
                             <div className="grid grid-cols-4 gap-2 text-center text-sm">
                                 <div>
                                     <div className="text-gray-400">Morning</div>
-                                    <div className="font-semibold">{Math.round(hourlyTemps[0]?.temp || 0)}°</div>
+                                    <div className="font-semibold">{Math.round(hourlyTemps[6]?.temp || hourlyTemps[0]?.temp || 0)}°</div>
                                 </div>
                                 <div>
                                     <div className="text-gray-400">Afternoon</div>
-                                    <div className="font-semibold">{Math.round(hourlyTemps[1]?.temp || 0)}°</div>
+                                    <div className="font-semibold">{Math.round(hourlyTemps[12]?.temp || hourlyTemps[1]?.temp || 0)}°</div>
                                 </div>
                                 <div>
                                     <div className="text-gray-400">Evening</div>
-                                    <div className="font-semibold">{Math.round(hourlyTemps[2]?.temp || 0)}°</div>
+                                    <div className="font-semibold">{Math.round(hourlyTemps[18]?.temp || hourlyTemps[2]?.temp || 0)}°</div>
                                 </div>
                                 <div>
                                     <div className="text-gray-400">Night</div>
-                                    <div className="font-semibold">{Math.round(hourlyTemps[3]?.temp || 0)}°</div>
+                                    <div className="font-semibold">{Math.round(hourlyTemps[23]?.temp || hourlyTemps[3]?.temp || 0)}°</div>
                                 </div>
                             </div>
                         </div>
@@ -225,30 +225,34 @@ export default function WeatherPage() {
 
                     {/* Middle & Right Columns */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* 7-Day Forecast */}
+                        {/* 48-Hour Forecast */}
                         <div className="bg-gray-800/50 backdrop-blur-xl rounded-3xl p-6 border border-gray-700/50">
-                            <h3 className="text-xl font-semibold mb-4">7-Day Forecast ({weekForecast.length} days)</h3>
+                            <h3 className="text-xl font-semibold mb-4">48-Hour Forecast</h3>
                             <div className="overflow-x-auto">
-                                <div className="grid grid-cols-7 gap-3 min-w-max">
-                                    {weekForecast.map((day: any, index: number) => {
-                                        const date = new Date(day.dt * 1000);
-                                        const dayName = index === 0 ? 'Today' : date.toLocaleDateString('en-US', { weekday: 'short' });
-                                        const isToday = index === 0;
+                                <div className="flex gap-3 pb-2">
+                                    {hourly.slice(0, 48).map((hour: any, index: number) => {
+                                        const date = new Date(hour.dt * 1000);
+                                        const isNow = index === 0;
 
                                         return (
                                             <div
                                                 key={index}
-                                                className={`text-center p-4 rounded-2xl transition-all hover:scale-105 min-w-[120px] ${isToday ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-gray-700/30'
+                                                className={`text-center p-4 rounded-2xl transition-all hover:scale-105 flex-shrink-0 w-24 ${isNow ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-gray-700/30'
                                                     }`}
                                             >
-                                                <div className="text-sm text-gray-400 mb-2">{dayName}</div>
-                                                <div className="text-4xl mb-2">
-                                                    {day.weather[0].main.includes('Cloud') ? '☁️' :
-                                                        day.weather[0].main.includes('Rain') ? '🌧️' :
-                                                            day.weather[0].main.includes('Clear') ? '☀️' : '⛅'}
+                                                <div className="text-xs text-gray-400 mb-2">
+                                                    {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
-                                                <div className="font-semibold">{Math.round(day.temp.max)}°</div>
-                                                <div className="text-sm text-gray-400">{Math.round(day.temp.min)}°</div>
+                                                <div className="text-3xl mb-2">
+                                                    {hour.weather[0].main.includes('Cloud') ? '☁️' :
+                                                        hour.weather[0].main.includes('Rain') ? '🌧️' :
+                                                            hour.weather[0].main.includes('Clear') ? (hour.is_day ? '☀️' : '🌙') : '⛅'}
+                                                </div>
+                                                <div className="font-semibold text-lg">{Math.round(hour.temp)}°</div>
+                                                <div className="text-xs text-blue-400 mt-1">💨 {msToKmh(hour.wind_speed)}</div>
+                                                {hour.pop > 0.3 && (
+                                                    <div className="text-xs text-cyan-400 mt-1">💧 {Math.round(hour.pop * 100)}%</div>
+                                                )}
                                             </div>
                                         );
                                     })}
