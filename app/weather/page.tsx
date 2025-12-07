@@ -227,29 +227,32 @@ export default function WeatherPage() {
                     <div className="lg:col-span-2 space-y-6">
                         {/* 7-Day Forecast */}
                         <div className="bg-gray-800/50 backdrop-blur-xl rounded-3xl p-6 border border-gray-700/50">
-                            <div className="grid grid-cols-7 gap-3">
-                                {weekForecast.map((day: any, index: number) => {
-                                    const date = new Date(day.dt * 1000);
-                                    const dayName = index === 0 ? 'Today' : date.toLocaleDateString('en-US', { weekday: 'short' });
-                                    const isToday = index === 0;
+                            <h3 className="text-xl font-semibold mb-4">7-Day Forecast ({weekForecast.length} days)</h3>
+                            <div className="overflow-x-auto">
+                                <div className="grid grid-cols-7 gap-3 min-w-max">
+                                    {weekForecast.map((day: any, index: number) => {
+                                        const date = new Date(day.dt * 1000);
+                                        const dayName = index === 0 ? 'Today' : date.toLocaleDateString('en-US', { weekday: 'short' });
+                                        const isToday = index === 0;
 
-                                    return (
-                                        <div
-                                            key={index}
-                                            className={`text-center p-4 rounded-2xl transition-all hover:scale-105 ${isToday ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-gray-700/30'
-                                                }`}
-                                        >
-                                            <div className="text-sm text-gray-400 mb-2">{dayName}</div>
-                                            <div className="text-4xl mb-2">
-                                                {day.weather[0].main.includes('Cloud') ? '☁️' :
-                                                    day.weather[0].main.includes('Rain') ? '🌧️' :
-                                                        day.weather[0].main.includes('Clear') ? '☀️' : '⛅'}
+                                        return (
+                                            <div
+                                                key={index}
+                                                className={`text-center p-4 rounded-2xl transition-all hover:scale-105 min-w-[120px] ${isToday ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-gray-700/30'
+                                                    }`}
+                                            >
+                                                <div className="text-sm text-gray-400 mb-2">{dayName}</div>
+                                                <div className="text-4xl mb-2">
+                                                    {day.weather[0].main.includes('Cloud') ? '☁️' :
+                                                        day.weather[0].main.includes('Rain') ? '🌧️' :
+                                                            day.weather[0].main.includes('Clear') ? '☀️' : '⛅'}
+                                                </div>
+                                                <div className="font-semibold">{Math.round(day.temp.max)}°</div>
+                                                <div className="text-sm text-gray-400">{Math.round(day.temp.min)}°</div>
                                             </div>
-                                            <div className="font-semibold">{Math.round(day.temp.max)}°</div>
-                                            <div className="text-sm text-gray-400">{Math.round(day.temp.min)}°</div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
 
