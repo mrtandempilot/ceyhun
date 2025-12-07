@@ -188,6 +188,13 @@ export default function Navbar() {
             </Link>
 
             <Link
+              href="/weather"
+              className="px-5 py-2.5 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all duration-300 font-medium"
+            >
+              Weather
+            </Link>
+
+            <Link
               href="/contact"
               className="px-5 py-2.5 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all duration-300 font-medium"
             >
@@ -327,6 +334,14 @@ export default function Navbar() {
                 onClick={() => setIsOpen(false)}
               >
                 About
+              </Link>
+
+              <Link
+                href="/weather"
+                className="block py-3 px-4 hover:bg-white/80 rounded-full transition-all duration-300 text-gray-700 hover:text-purple-600 font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                Weather
               </Link>
 
               <Link
