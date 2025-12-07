@@ -358,12 +358,92 @@ export default function WeatherPage() {
                                     {new Date(current.sunset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
+                            {current.moonrise && (
+                                <div className="flex justify-between text-gray-700">
+                                    <span className="font-medium">Moonrise:</span>
+                                    <span className="font-bold">
+                                        {new Date(current.moonrise * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                            )}
+                            {current.moonset && (
+                                <div className="flex justify-between text-gray-700">
+                                    <span className="font-medium">Moonset:</span>
+                                    <span className="font-bold">
+                                        {new Date(current.moonset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                            )}
                             <div className="flex justify-between text-gray-700">
                                 <span className="font-medium">Moon Phase:</span>
                                 <span className="font-bold">{moonPhase.icon} {moonPhase.phase}</span>
                             </div>
+                            {daily[0].moon_illumination && (
+                                <div className="flex justify-between text-gray-700">
+                                    <span className="font-medium">Illumination:</span>
+                                    <span className="font-bold">{daily[0].moon_illumination}%</span>
+                                </div>
+                            )}
                         </div>
                     </div>
+
+                    {/* Temperature Feels */}
+                    {(current.wind_chill !== current.temp || current.heat_index !== current.temp) && (
+                        <div className="bg-white rounded-2xl p-6 shadow-xl">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-4">🌡️ Temperature Feels</h3>
+                            <div className="space-y-3">
+                                {current.wind_chill && current.wind_chill < current.temp && (
+                                    <div className="flex justify-between text-gray-700">
+                                        <span className="font-medium">Wind Chill:</span>
+                                        <span className="font-bold text-blue-600">{formatTemp(current.wind_chill)}</span>
+                                    </div>
+                                )}
+                                {current.heat_index && current.heat_index > current.temp && (
+                                    <div className="flex justify-between text-gray-700">
+                                        <span className="font-medium">Heat Index:</span>
+                                        <span className="font-bold text-orange-600">{formatTemp(current.heat_index)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between text-gray-700">
+                                    <span className="font-medium">Actual Temp:</span>
+                                    <span className="font-bold">{formatTemp(current.temp)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Precipitation */}
+                    {(current.precip_mm > 0 || daily[0].totalprecip_mm > 0) && (
+                        <div className="bg-white rounded-2xl p-6 shadow-xl">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-4">💧 Precipitation</h3>
+                            <div className="space-y-3">
+                                {current.precip_mm > 0 && (
+                                    <div className="flex justify-between text-gray-700">
+                                        <span className="font-medium">Current:</span>
+                                        <span className="font-bold text-cyan-600">{current.precip_mm} mm</span>
+                                    </div>
+                                )}
+                                {daily[0].totalprecip_mm > 0 && (
+                                    <div className="flex justify-between text-gray-700">
+                                        <span className="font-medium">Today Total:</span>
+                                        <span className="font-bold text-cyan-600">{daily[0].totalprecip_mm} mm</span>
+                                    </div>
+                                )}
+                                {daily[0].will_it_rain === 1 && (
+                                    <div className="flex justify-between text-gray-700">
+                                        <span className="font-medium">Rain Chance:</span>
+                                        <span className="font-bold text-blue-600">{daily[0].chance_of_rain}%</span>
+                                    </div>
+                                )}
+                                {daily[0].will_it_snow === 1 && (
+                                    <div className="flex justify-between text-gray-700">
+                                        <span className="font-medium">Snow Chance:</span>
+                                        <span className="font-bold text-purple-600">{daily[0].chance_of_snow}%</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
