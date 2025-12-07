@@ -19,50 +19,15 @@ export async function GET(request: NextRequest) {
             return NextResponse.json(weatherCache.data);
         }
 
-        // Fetch weather data from OpenWeather One Call API 3.0
-        const weatherUrl = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely&units=metric&appid=${OPENWEATHER_API_KEY}`;
+        // Fetch weather data from OpenWeather One Call API 2.5 (free tier)
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely&units=metric&appid=${OPENWEATHER_API_KEY}`;
 
         const weatherResponse = await fetch(weatherUrl);
 
         if (!weatherResponse.ok) {
-            // Fallback to One Call API 2.5 if 3.0 fails
-            const fallbackUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely&units=metric&appid=${OPENWEATHER_API_KEY}`;
-            const fallbackResponse = await fetch(fallbackUrl);
-
-            if (!fallbackResponse.ok) {
-                throw new Error(`OpenWeather API error: ${fallbackResponse.statusText}`);
-            }
-
-            const weatherData = await fallbackResponse.json();
-
-            // Fetch air quality data separately
-            let airQuality = null;
-            try {
-                const aqiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}`;
-                const aqiResponse = await fetch(aqiUrl);
-                if (aqiResponse.ok) {
-                    airQuality = await aqiResponse.json();
-                }
-            } catch (error) {
-                console.error('Air quality fetch failed:', error);
-            }
-
-            const result = {
-                ...weatherData,
-                air_quality: airQuality,
-                location: {
-                    lat: parseFloat(lat as string),
-                    lon: parseFloat(lon as string),
-                }
-            };
-
-            // Update cache
-            weatherCache = {
-                data: result,
-                timestamp: Date.now()
-            };
-
-            return NextResponse.json(result);
+            const errorText = await weatherResponse.text();
+            console.error('OpenWeather API error:', weatherResponse.status, errorText);
+            throw new Error(`OpenWeather API error: ${weatherResponse.status} - ${errorText}`);
         }
 
         const weatherData = await weatherResponse.json();
