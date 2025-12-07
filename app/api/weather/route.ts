@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     // WeatherAPI.com Forecast API (includes current + 7 days forecast + hourly)
-    const weatherUrl = `https://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API_KEY}&q=${lat},${lon}&days=7&aqi=yes&alerts=yes`;
+    const weatherUrl = `https://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API_KEY}&q=${lat},${lon}&days=7&aqi=yes&alerts=yes&pollen=yes`;
 
     const weatherResponse = await fetch(weatherUrl);
 
@@ -158,6 +158,8 @@ export async function GET(request: NextRequest) {
           components: weatherData.current.air_quality,
         }]
       } : null,
+      pollen: current.pollen || null,
+      alerts: weatherData.alerts?.alert || [],
       location: {
         lat: location.lat,
         lon: location.lon,
