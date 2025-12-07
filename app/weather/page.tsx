@@ -230,7 +230,7 @@ export default function WeatherPage() {
                             <div className="grid grid-cols-7 gap-3">
                                 {weekForecast.map((day: any, index: number) => {
                                     const date = new Date(day.dt * 1000);
-                                    const dayName = index === 0 ? 'Sun' : date.toLocaleDateString('en-US', { weekday: 'short' });
+                                    const dayName = index === 0 ? 'Today' : date.toLocaleDateString('en-US', { weekday: 'short' });
                                     const isToday = index === 0;
 
                                     return (
@@ -408,7 +408,165 @@ export default function WeatherPage() {
                                         <div className="text-3xl font-bold mt-2">{Math.round(current.feels_like)}°</div>
                                     </div>
                                 </div>
+
+                                {/* Pressure */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">Pressure</div>
+
+                                    <div className="flex items-center justify-center mb-4">
+                                        <div className="text-6xl">🔽</div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <div className="text-sm text-gray-400">
+                                            {hourly.length >= 3 && formatPressureTrend(current.pressure, hourly[3].pressure).trend}
+                                        </div>
+                                        <div className="text-3xl font-bold mt-2">{current.pressure} hPa</div>
+                                    </div>
+                                </div>
+
+                                {/* Cloud Coverage */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">Cloud Coverage</div>
+
+                                    <div className="flex items-center justify-center mb-4">
+                                        <div className="text-6xl">☁️</div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <div className="text-sm text-gray-400">
+                                            {current.clouds > 75 ? 'Very cloudy' : current.clouds > 50 ? 'Mostly cloudy' : current.clouds > 25 ? 'Partly cloudy' : 'Mostly clear'}
+                                        </div>
+                                        <div className="text-3xl font-bold mt-2">{current.clouds}%</div>
+                                    </div>
+                                </div>
+
+                                {/* Air Quality */}
+                                {state.data.air_quality?.list?.[0]?.main?.aqi && (
+                                    <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                        <div className="text-gray-400 mb-4">Air Quality</div>
+
+                                        <div className="flex items-center justify-center mb-4">
+                                            <div className="text-6xl">💨</div>
+                                        </div>
+
+                                        <div className="text-center">
+                                            <div className="text-sm text-gray-400">
+                                                {['Good', 'Fair', 'Moderate', 'Poor', 'Very Poor'][state.data.air_quality.list[0].main.aqi - 1]}
+                                            </div>
+                                            <div className="text-3xl font-bold mt-2">AQI {state.data.air_quality.list[0].main.aqi}</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Precipitation */}
+                                {(current.precip_mm > 0 || daily[0].totalprecip_mm > 0) && (
+                                    <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                        <div className="text-gray-400 mb-4">Precipitation</div>
+
+                                        <div className="flex items-center justify-center mb-4">
+                                            <div className="text-6xl">🌧️</div>
+                                        </div>
+
+                                        <div className="text-center">
+                                            <div className="text-sm text-gray-400">
+                                                {daily[0].will_it_rain === 1 ? `${daily[0].chance_of_rain}% chance of rain` : 'No rain expected'}
+                                            </div>
+                                            <div className="text-3xl font-bold mt-2">{daily[0].totalprecip_mm} mm</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Moon Phase */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">Moon Phase</div>
+
+                                    <div className="flex items-center justify-center mb-4">
+                                        <div className="text-6xl">{getMoonPhase(daily[0].moon_phase).icon}</div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <div className="text-sm text-gray-400">{getMoonPhase(daily[0].moon_phase).phase}</div>
+                                        {daily[0].moon_illumination && (
+                                            <div className="text-3xl font-bold mt-2">{daily[0].moon_illumination}%</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Pollen */}
+                                {state.data.pollen && (
+                                    <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                        <div className="text-gray-400 mb-4">Pollen</div>
+
+                                        <div className="flex items-center justify-center mb-4">
+                                            <div className="text-6xl">🌸</div>
+                                        </div>
+
+                                        <div className="text-center">
+                                            <div className="text-sm text-gray-400">Grass & Tree pollen</div>
+                                            <div className="text-xl font-bold mt-2">
+                                                {state.data.pollen.grass_pollen || 0} / {state.data.pollen.tree_pollen || 0}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Thermal Forecast */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">🪂 Thermal Forecast</div>
+
+                                    <div className="flex items-center justify-center mb-4">
+                                        <div className={`text-6xl font-bold ${calculateThermalPotential(current.temp, current.temp + 2, current.wind_speed, current.clouds, new Date().getHours()).color
+                                            }`}>
+                                            {calculateThermalPotential(current.temp, current.temp + 2, current.wind_speed, current.clouds, new Date().getHours()).rating}
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <div className="text-sm text-gray-400">
+                                            {calculateThermalPotential(current.temp, current.temp + 2, current.wind_speed, current.clouds, new Date().getHours()).description}
+                                        </div>
+                                        <div className="text-xl font-bold mt-2">out of 10</div>
+                                    </div>
+                                </div>
+
+                                {/* Flight Suitability */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">🪂 Flight Suitability</div>
+
+                                    <div className="flex items-center justify-center mb-4">
+                                        <div className={`text-6xl font-bold ${getFlightSuitability(current).color.replace('bg-', 'text-')
+                                            }`}>
+                                            {getFlightSuitability(current).rating}
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <div className="text-sm text-gray-400">
+                                            {getFlightSuitability(current).description}
+                                        </div>
+                                        <div className="text-xl font-bold mt-2">out of 10</div>
+                                    </div>
+                                </div>
                             </div>
+
+                            {/* Weather Alerts */}
+                            {state.data.alerts && state.data.alerts.length > 0 && (
+                                <div className="mt-6">
+                                    <h2 className="text-2xl font-semibold mb-4">⚠️ Weather Alerts</h2>
+                                    <div className="space-y-3">
+                                        {state.data.alerts.map((alert: any, index: number) => (
+                                            <div key={index} className="bg-red-500/20 backdrop-blur-xl rounded-2xl p-6 border border-red-500/50">
+                                                <div className="font-bold text-red-400 mb-2">{alert.event}</div>
+                                                <div className="text-sm text-gray-300">{alert.headline}</div>
+                                                <div className="text-xs text-gray-400 mt-2">
+                                                    {new Date(alert.effective).toLocaleString()} - {new Date(alert.expires).toLocaleString()}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
