@@ -229,7 +229,7 @@ function getWeatherIcon(code: number, isDay: boolean): string {
 }
 
 // Helper function to parse sunrise/sunset times from WeatherAPI
-// WeatherAPI returns times like "08:00 AM" or "06:30 PM"
+// WeatherAPI returns times like "08:00 AM" or "06:30 PM" in LOCAL time for the location
 function parseSunTime(date: string, time: string, timezone: string): number {
   // Parse the time string (e.g., "08:00 AM")
   const [timePart, period] = time.split(' ');
@@ -243,9 +243,17 @@ function parseSunTime(date: string, time: string, timezone: string): number {
     hour24 = 0;
   }
 
-  // Create date object with the parsed time
-  // Format: YYYY-MM-DD
-  const dateTime = new Date(`${date}T${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`);
+  // WeatherAPI returns times in the location's local time
+  // We need to create a date in UTC but representing the local time
+  // Then adjust for the timezone offset
+  const [year, month, day] = date.split('-').map(Number);
 
-  return Math.floor(dateTime.getTime() / 1000);
+  // Create date in UTC representing the local time
+  const localDate = new Date(Date.UTC(year, month - 1, day, hour24, minutes, 0));
+
+  // Get the timezone offset for Turkey (UTC+3)
+  // Since WeatherAPI gives us local time, we need to subtract the offset to get UTC
+  const turkeyOffset = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+
+  return Math.floor((localDate.getTime() - turkeyOffset) / 1000);
 }
