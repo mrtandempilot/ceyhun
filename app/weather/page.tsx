@@ -69,10 +69,10 @@ export default function WeatherPage() {
 
     if (state.loading && !state.data) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading weather data...</p>
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading weather data...</p>
                 </div>
             </div>
         );
@@ -80,13 +80,13 @@ export default function WeatherPage() {
 
     if (state.error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-6">
-                <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md">
-                    <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Weather</h2>
-                    <p className="text-gray-700 mb-6">{state.error}</p>
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-6">
+                <div className="bg-gray-800 rounded-2xl shadow-xl p-8 max-w-md border border-gray-700">
+                    <h2 className="text-2xl font-bold text-red-500 mb-4">Error Loading Weather</h2>
+                    <p className="text-gray-300 mb-6">{state.error}</p>
                     <button
                         onClick={fetchWeather}
-                        className="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold"
+                        className="w-full px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-lg transition-colors font-semibold"
                     >
                         Try Again
                     </button>
@@ -97,469 +97,330 @@ export default function WeatherPage() {
 
     if (!state.data) return null;
 
-    const { current, hourly, daily, air_quality } = state.data;
-    const flightSuitability = getFlightSuitability(current);
-    const uvSafety = getUVSafetyLevel(current.uvi || 0);
+    const { current, hourly, daily } = state.data;
     const windDir = getWindDirection(current.wind_deg);
-    const moonPhase = getMoonPhase(daily[0].moon_phase);
-    const flightWindow = getFlightWindow(hourly.slice(0, 24));
+    const uvSafety = getUVSafetyLevel(current.uvi || 0);
 
-    // Calculate thermal potential for current hour
-    const currentHour = new Date().getHours();
-    const thermal = calculateThermalPotential(
-        current.temp,
-        current.temp + 2,
-        current.wind_speed,
-        current.clouds,
-        currentHour
-    );
+    // Get 7-day forecast
+    const weekForecast = daily.slice(0, 7);
 
-    // Get pressure trend
-    const pressureTrend = hourly.length >= 3
-        ? formatPressureTrend(current.pressure, hourly[3].pressure)
-        : { trend: 'Unknown', icon: '?', description: 'Insufficient data' };
-
-    // Air quality index
-    const aqi = air_quality?.list?.[0]?.main?.aqi || 0;
-    const aqiLevels = ['Good', 'Fair', 'Moderate', 'Poor', 'Very Poor'];
-    const aqiColors = ['text-green-600', 'text-yellow-600', 'text-orange-600', 'text-red-600', 'text-purple-600'];
+    // Get hourly temps for chart
+    const hourlyTemps = hourly.slice(0, 24);
+    const tempValues = hourlyTemps.map((h: any) => h.temp);
+    const maxTemp = Math.max(...tempValues);
+    const minTemp = Math.min(...tempValues);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-20 px-4">
-            {/* Header */}
-            <div className="max-w-7xl mx-auto mb-8">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-                            ⛅ Paragliding Weather
-                        </h1>
-                        <p className="text-gray-600 text-lg">
-                            📍 Ölüdeniz, Turkey {state.lastUpdate && `• Updated ${state.lastUpdate.toLocaleTimeString()}`}
-                        </p>
-                    </div>
-                    <button
-                        onClick={fetchWeather}
-                        disabled={state.loading}
-                        className="px-6 py-3 bg-white hover:bg-gray-50 text-purple-600 rounded-xl transition-colors disabled:opacity-50 flex items-center space-x-2 shadow-lg"
-                    >
-                        <svg className={`w-5 h-5 ${state.loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        <span className="font-semibold">Refresh</span>
-                    </button>
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white p-6">
+            <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="mb-8">
+                    <h1 className="text-2xl font-light text-gray-400 mb-2">📍 Ölüdeniz, Turkey</h1>
+                    <p className="text-sm text-gray-500">
+                        {state.lastUpdate && `Updated ${state.lastUpdate.toLocaleTimeString()}`}
+                    </p>
                 </div>
 
-                {/* Flight Suitability Alert */}
-                <div className={`${flightSuitability.color} rounded-2xl p-6 mb-8 shadow-xl`}>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h2 className="text-2xl font-bold text-white mb-2">
-                                Flight Suitability: {flightSuitability.rating}/10
-                            </h2>
-                            <p className="text-white text-lg">{flightSuitability.description}</p>
-                        </div>
-                        <div className="text-6xl font-bold text-white opacity-50">
-                            {flightSuitability.rating}
-                        </div>
-                    </div>
-                    {flightSuitability.warnings.length > 0 && (
-                        <div className="mt-4 space-y-2">
-                            {flightSuitability.warnings.map((warning, i) => (
-                                <p key={i} className="text-white font-semibold text-lg">{warning}</p>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Current Weather */}
-                <div className="lg:col-span-2 bg-white rounded-2xl p-8 shadow-xl">
-                    <h2 className="text-3xl font-bold text-gray-800 mb-6">Current Conditions</h2>
-
-                    <div className="grid grid-cols-2 gap-6">
-                        {/* Temperature & Weather */}
-                        <div className="col-span-2 flex items-center space-x-6">
-                            <img
-                                src={getWeatherIconUrl(current.weather[0].icon)}
-                                alt={current.weather[0].description}
-                                className="w-28 h-28"
-                            />
-                            <div>
-                                <div className="text-6xl font-bold text-gray-800">
-                                    {formatTemp(current.temp)}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left Column */}
+                    <div className="space-y-6">
+                        {/* Current Weather Card */}
+                        <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <div className="text-7xl font-light mb-2">{Math.round(current.temp)}°C</div>
+                                    <div className="text-xl text-gray-300 capitalize">{current.weather[0].description}</div>
                                 </div>
-                                <p className="text-2xl text-gray-600 capitalize mt-2">
-                                    {current.weather[0].description}
-                                </p>
-                                <p className="text-gray-500 text-lg mt-1">
-                                    Feels like {formatTemp(current.feels_like)}
-                                </p>
+                                <div className="text-8xl">
+                                    {current.is_day ? '☀️' : '🌙'}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Wind */}
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5">
-                            <div className="flex items-center space-x-2 mb-3">
-                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        {/* Temperature Chart */}
+                        <div className="bg-gray-800/50 backdrop-blur-xl rounded-3xl p-6 border border-gray-700/50">
+                            <h3 className="text-lg font-semibold mb-6">Temperature</h3>
+
+                            {/* Chart */}
+                            <div className="relative h-32 mb-4">
+                                <svg className="w-full h-full" viewBox="0 0 400 100" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id="tempGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.3" />
+                                            <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
+                                        </linearGradient>
+                                    </defs>
+
+                                    {/* Area under curve */}
+                                    <path
+                                        d={`M 0,100 ${hourlyTemps.slice(0, 4).map((h: any, i: number) => {
+                                            const x = (i / 3) * 400;
+                                            const y = 100 - ((h.temp - minTemp) / (maxTemp - minTemp)) * 80;
+                                            return `L ${x},${y}`;
+                                        }).join(' ')} L 400,100 Z`}
+                                        fill="url(#tempGradient)"
+                                    />
+
+                                    {/* Line */}
+                                    <path
+                                        d={`M ${hourlyTemps.slice(0, 4).map((h: any, i: number) => {
+                                            const x = (i / 3) * 400;
+                                            const y = 100 - ((h.temp - minTemp) / (maxTemp - minTemp)) * 80;
+                                            return `${x},${y}`;
+                                        }).join(' L ')}`}
+                                        stroke="#fbbf24"
+                                        strokeWidth="3"
+                                        fill="none"
+                                        className="animate-pulse"
+                                    />
+
+                                    {/* Points */}
+                                    {hourlyTemps.slice(0, 4).map((h: any, i: number) => {
+                                        const x = (i / 3) * 400;
+                                        const y = 100 - ((h.temp - minTemp) / (maxTemp - minTemp)) * 80;
+                                        return (
+                                            <circle
+                                                key={i}
+                                                cx={x}
+                                                cy={y}
+                                                r="4"
+                                                fill="#fbbf24"
+                                                className="animate-pulse"
+                                            />
+                                        );
+                                    })}
                                 </svg>
-                                <span className="text-gray-600 font-semibold">Wind</span>
                             </div>
-                            <div className="text-3xl font-bold text-gray-800">
-                                {msToKmh(current.wind_speed)} km/h
-                            </div>
-                            <p className="text-gray-700 mt-1">{windDir} ({current.wind_deg}°)</p>
-                            {current.wind_gust && (
-                                <p className="text-orange-600 font-semibold mt-2">
-                                    Gusts: {msToKmh(current.wind_gust)} km/h
-                                </p>
-                            )}
-                        </div>
 
-                        {/* Humidity */}
-                        <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-xl p-5">
-                            <div className="flex items-center space-x-2 mb-3">
-                                <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                                </svg>
-                                <span className="text-gray-600 font-semibold">Humidity</span>
-                            </div>
-                            <div className="text-3xl font-bold text-gray-800">{current.humidity}%</div>
-                            {current.dew_point && (
-                                <p className="text-gray-700 mt-1">Dew: {formatTemp(current.dew_point)}</p>
-                            )}
-                        </div>
-
-                        {/* Pressure */}
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5">
-                            <div className="flex items-center space-x-2 mb-3">
-                                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                </svg>
-                                <span className="text-gray-600 font-semibold">Pressure</span>
-                            </div>
-                            <div className="text-3xl font-bold text-gray-800">{current.pressure} hPa</div>
-                            <p className="text-gray-700 mt-1">
-                                {pressureTrend.icon} {pressureTrend.trend}
-                            </p>
-                        </div>
-
-                        {/* Visibility */}
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5">
-                            <div className="flex items-center space-x-2 mb-3">
-                                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                <span className="text-gray-600 font-semibold">Visibility</span>
-                            </div>
-                            <div className="text-3xl font-bold text-gray-800">
-                                {current.visibility ? metersToKm(current.visibility) : '10+'} km
+                            {/* Labels */}
+                            <div className="grid grid-cols-4 gap-2 text-center text-sm">
+                                <div>
+                                    <div className="text-gray-400">Morning</div>
+                                    <div className="font-semibold">{Math.round(hourlyTemps[0]?.temp || 0)}°</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-400">Afternoon</div>
+                                    <div className="font-semibold">{Math.round(hourlyTemps[1]?.temp || 0)}°</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-400">Evening</div>
+                                    <div className="font-semibold">{Math.round(hourlyTemps[2]?.temp || 0)}°</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-400">Night</div>
+                                    <div className="font-semibold">{Math.round(hourlyTemps[3]?.temp || 0)}°</div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Clouds */}
-                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5">
-                            <div className="flex items-center space-x-2 mb-3">
-                                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                                </svg>
-                                <span className="text-gray-600 font-semibold">Cloud Cover</span>
-                            </div>
-                            <div className="text-3xl font-bold text-gray-800">{current.clouds}%</div>
-                        </div>
-
-                        {/* UV Index */}
-                        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-5">
-                            <div className="flex items-center space-x-2 mb-3">
-                                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                                <span className="text-gray-600 font-semibold">UV Index</span>
-                            </div>
-                            <div className={`text-3xl font-bold ${uvSafety.color}`}>
-                                {current.uvi || 0} - {uvSafety.level}
-                            </div>
-                            <p className="text-gray-700 mt-1">{uvSafety.advice}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Paragliding Specific */}
-                <div className="space-y-6">
-                    {/* Thermal Forecast */}
-                    <div className="bg-white rounded-2xl p-6 shadow-xl">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-4">🌡️ Thermal Forecast</h3>
-                        <div className="text-center mb-4">
-                            <div className={`text-5xl font-bold ${thermal.color}`}>
-                                {thermal.rating}/10
-                            </div>
-                            <p className={`${thermal.color} mt-3 text-lg font-semibold`}>{thermal.description}</p>
-                        </div>
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-gray-700">
-                                <span className="font-medium">Wind Speed:</span>
-                                <span className="font-bold">{msToKmh(current.wind_speed)} km/h</span>
-                            </div>
-                            <div className="flex justify-between text-gray-700">
-                                <span className="font-medium">Cloud Cover:</span>
-                                <span className="font-bold">{current.clouds}%</span>
-                            </div>
-                            <div className="flex justify-between text-gray-700">
-                                <span className="font-medium">Time:</span>
-                                <span className="font-bold">{new Date().toLocaleTimeString()}</span>
-                            </div>
-                        </div>
+                        {/* Refresh Button */}
+                        <button
+                            onClick={fetchWeather}
+                            disabled={state.loading}
+                            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-gray-900 font-semibold py-4 rounded-2xl transition-all disabled:opacity-50"
+                        >
+                            {state.loading ? 'Refreshing...' : '🔄 Refresh Weather'}
+                        </button>
                     </div>
 
-                    {/* Flight Window */}
-                    {flightWindow.start >= 0 && (
-                        <div className="bg-white rounded-2xl p-6 shadow-xl">
-                            <h3 className="text-2xl font-bold text-gray-800 mb-4">⏰ Best Flying Hours</h3>
-                            <div className="text-center">
-                                <p className="text-gray-600 mb-3 font-medium">Today's optimal window:</p>
-                                <div className="text-2xl font-bold text-purple-600">
-                                    {new Date(hourly[flightWindow.start].dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    {' - '}
-                                    {new Date(hourly[flightWindow.end].dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </div>
-                                <p className="text-gray-600 mt-3 font-semibold">Quality: {flightWindow.quality}</p>
-                            </div>
-                        </div>
-                    )}
+                    {/* Middle & Right Columns */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* 7-Day Forecast */}
+                        <div className="bg-gray-800/50 backdrop-blur-xl rounded-3xl p-6 border border-gray-700/50">
+                            <div className="grid grid-cols-7 gap-3">
+                                {weekForecast.map((day: any, index: number) => {
+                                    const date = new Date(day.dt * 1000);
+                                    const dayName = index === 0 ? 'Sun' : date.toLocaleDateString('en-US', { weekday: 'short' });
+                                    const isToday = index === 0;
 
-                    {/* Air Quality */}
-                    {aqi > 0 && (
-                        <div className="bg-white rounded-2xl p-6 shadow-xl">
-                            <h3 className="text-2xl font-bold text-gray-800 mb-4">💨 Air Quality</h3>
-                            <div className="text-center">
-                                <div className={`text-4xl font-bold ${aqiColors[aqi - 1]}`}>
-                                    {aqiLevels[aqi - 1]}
-                                </div>
-                                <p className="text-gray-600 mt-3 font-medium">AQI: {aqi}/5</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Sun & Moon */}
-                    <div className="bg-white rounded-2xl p-6 shadow-xl">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-4">☀️ Sun & Moon</h3>
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-gray-700">
-                                <span className="font-medium">Sunrise:</span>
-                                <span className="font-bold">
-                                    {new Date(current.sunrise * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            </div>
-                            <div className="flex justify-between text-gray-700">
-                                <span className="font-medium">Sunset:</span>
-                                <span className="font-bold">
-                                    {new Date(current.sunset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            </div>
-                            {current.moonrise && (
-                                <div className="flex justify-between text-gray-700">
-                                    <span className="font-medium">Moonrise:</span>
-                                    <span className="font-bold">
-                                        {new Date(current.moonrise * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-                            )}
-                            {current.moonset && (
-                                <div className="flex justify-between text-gray-700">
-                                    <span className="font-medium">Moonset:</span>
-                                    <span className="font-bold">
-                                        {new Date(current.moonset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-                            )}
-                            <div className="flex justify-between text-gray-700">
-                                <span className="font-medium">Moon Phase:</span>
-                                <span className="font-bold">{moonPhase.icon} {moonPhase.phase}</span>
-                            </div>
-                            {daily[0].moon_illumination && (
-                                <div className="flex justify-between text-gray-700">
-                                    <span className="font-medium">Illumination:</span>
-                                    <span className="font-bold">{daily[0].moon_illumination}%</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Temperature Feels */}
-                    {(current.wind_chill !== current.temp || current.heat_index !== current.temp) && (
-                        <div className="bg-white rounded-2xl p-6 shadow-xl">
-                            <h3 className="text-2xl font-bold text-gray-800 mb-4">🌡️ Temperature Feels</h3>
-                            <div className="space-y-3">
-                                {current.wind_chill && current.wind_chill < current.temp && (
-                                    <div className="flex justify-between text-gray-700">
-                                        <span className="font-medium">Wind Chill:</span>
-                                        <span className="font-bold text-blue-600">{formatTemp(current.wind_chill)}</span>
-                                    </div>
-                                )}
-                                {current.heat_index && current.heat_index > current.temp && (
-                                    <div className="flex justify-between text-gray-700">
-                                        <span className="font-medium">Heat Index:</span>
-                                        <span className="font-bold text-orange-600">{formatTemp(current.heat_index)}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between text-gray-700">
-                                    <span className="font-medium">Actual Temp:</span>
-                                    <span className="font-bold">{formatTemp(current.temp)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Precipitation */}
-                    {(current.precip_mm > 0 || daily[0].totalprecip_mm > 0) && (
-                        <div className="bg-white rounded-2xl p-6 shadow-xl">
-                            <h3 className="text-2xl font-bold text-gray-800 mb-4">💧 Precipitation</h3>
-                            <div className="space-y-3">
-                                {current.precip_mm > 0 && (
-                                    <div className="flex justify-between text-gray-700">
-                                        <span className="font-medium">Current:</span>
-                                        <span className="font-bold text-cyan-600">{current.precip_mm} mm</span>
-                                    </div>
-                                )}
-                                {daily[0].totalprecip_mm > 0 && (
-                                    <div className="flex justify-between text-gray-700">
-                                        <span className="font-medium">Today Total:</span>
-                                        <span className="font-bold text-cyan-600">{daily[0].totalprecip_mm} mm</span>
-                                    </div>
-                                )}
-                                {daily[0].will_it_rain === 1 && (
-                                    <div className="flex justify-between text-gray-700">
-                                        <span className="font-medium">Rain Chance:</span>
-                                        <span className="font-bold text-blue-600">{daily[0].chance_of_rain}%</span>
-                                    </div>
-                                )}
-                                {daily[0].will_it_snow === 1 && (
-                                    <div className="flex justify-between text-gray-700">
-                                        <span className="font-medium">Snow Chance:</span>
-                                        <span className="font-bold text-purple-600">{daily[0].chance_of_snow}%</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Hourly Forecast */}
-            <div className="max-w-7xl mx-auto mt-8">
-                <div className="bg-white rounded-2xl p-8 shadow-xl">
-                    <h2 className="text-3xl font-bold text-gray-800 mb-6">48-Hour Forecast</h2>
-                    <div className="overflow-x-auto">
-                        <div className="flex space-x-4 pb-4">
-                            {hourly.slice(0, 48).map((hour: any, index: number) => {
-                                const date = new Date(hour.dt * 1000);
-                                const hourThermal = calculateThermalPotential(
-                                    hour.temp,
-                                    hour.temp + 2,
-                                    hour.wind_speed,
-                                    hour.clouds,
-                                    date.getHours()
-                                );
-
-                                return (
-                                    <div
-                                        key={index}
-                                        className="flex-shrink-0 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 w-36 text-center shadow-md hover:shadow-lg transition-shadow"
-                                    >
-                                        <p className="text-gray-600 font-semibold mb-3">
-                                            {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                        <img
-                                            src={getWeatherIconUrl(hour.weather[0].icon)}
-                                            alt={hour.weather[0].description}
-                                            className="w-14 h-14 mx-auto"
-                                        />
-                                        <p className="text-2xl font-bold text-gray-800 mt-2">{formatTemp(hour.temp)}</p>
-                                        <div className="mt-3 space-y-1 text-sm">
-                                            <p className="text-blue-600 font-semibold">
-                                                💨 {msToKmh(hour.wind_speed)} km/h
-                                            </p>
-                                            <p className={`${hourThermal.color} font-semibold`}>
-                                                🌡️ {hourThermal.rating}/10
-                                            </p>
-                                            {hour.pop > 0.3 && (
-                                                <p className="text-cyan-600 font-semibold">
-                                                    💧 {Math.round(hour.pop * 100)}%
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Daily Forecast */}
-            <div className="max-w-7xl mx-auto mt-8 mb-8">
-                <div className="bg-white rounded-2xl p-8 shadow-xl">
-                    <h2 className="text-3xl font-bold text-gray-800 mb-6">7-Day Forecast</h2>
-                    <div className="space-y-4">
-                        {daily.slice(0, 7).map((day: any, index: number) => {
-                            const date = new Date(day.dt * 1000);
-                            const dayName = index === 0 ? 'Today' : date.toLocaleDateString('en-US', { weekday: 'long' });
-                            const moon = getMoonPhase(day.moon_phase);
-
-                            return (
-                                <div
-                                    key={index}
-                                    className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow"
-                                >
-                                    <div className="flex items-center space-x-6 flex-1">
-                                        <div className="w-32">
-                                            <p className="font-bold text-gray-800 text-lg">{dayName}</p>
-                                            <p className="text-gray-600">
-                                                {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                            </p>
-                                        </div>
-                                        <img
-                                            src={getWeatherIconUrl(day.weather[0].icon)}
-                                            alt={day.weather[0].description}
-                                            className="w-14 h-14"
-                                        />
-                                        <p className="text-gray-700 capitalize flex-1 font-medium">{day.weather[0].description}</p>
-                                    </div>
-
-                                    <div className="flex items-center space-x-8">
-                                        <div className="text-center">
-                                            <p className="text-sm text-gray-600 font-medium">High/Low</p>
-                                            <p className="text-gray-800 font-bold text-lg">
-                                                {formatTemp(day.temp.max)} / {formatTemp(day.temp.min)}
-                                            </p>
-                                        </div>
-                                        <div className="text-center">
-                                            <p className="text-sm text-gray-600 font-medium">Wind</p>
-                                            <p className="text-blue-600 font-bold text-lg">
-                                                {msToKmh(day.wind_speed)} km/h
-                                            </p>
-                                        </div>
-                                        {day.pop > 0 && (
-                                            <div className="text-center">
-                                                <p className="text-sm text-gray-600 font-medium">Rain</p>
-                                                <p className="text-cyan-600 font-bold text-lg">
-                                                    {Math.round(day.pop * 100)}%
-                                                </p>
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`text-center p-4 rounded-2xl transition-all hover:scale-105 ${isToday ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-gray-700/30'
+                                                }`}
+                                        >
+                                            <div className="text-sm text-gray-400 mb-2">{dayName}</div>
+                                            <div className="text-4xl mb-2">
+                                                {day.weather[0].main.includes('Cloud') ? '☁️' :
+                                                    day.weather[0].main.includes('Rain') ? '🌧️' :
+                                                        day.weather[0].main.includes('Clear') ? '☀️' : '⛅'}
                                             </div>
-                                        )}
-                                        <div className="text-center">
-                                            <p className="text-sm text-gray-600 font-medium">Moon</p>
-                                            <p className="text-3xl">{moon.icon}</p>
+                                            <div className="font-semibold">{Math.round(day.temp.max)}°</div>
+                                            <div className="text-sm text-gray-400">{Math.round(day.temp.min)}°</div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Today's Overview */}
+                        <div>
+                            <h2 className="text-2xl font-semibold mb-4">Today's overview</h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Wind Status */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">Wind Status</div>
+
+                                    {/* Wind Chart */}
+                                    <div className="flex items-end justify-center space-x-1 h-24 mb-4">
+                                        {hourlyTemps.slice(0, 12).map((h: any, i: number) => {
+                                            const windSpeed = msToKmh(h.wind_speed);
+                                            const height = (windSpeed / 30) * 100;
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className="bg-yellow-500 rounded-t transition-all hover:bg-yellow-400"
+                                                    style={{
+                                                        width: '6px',
+                                                        height: `${Math.min(height, 100)}%`,
+                                                        animation: `grow 0.5s ease-out ${i * 0.1}s backwards`
+                                                    }}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="flex items-baseline justify-between">
+                                        <div className="text-2xl font-bold">{msToKmh(current.wind_speed)} km/h</div>
+                                        <div className="text-sm text-gray-400">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                    </div>
+                                </div>
+
+                                {/* UV Index */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">UV Index</div>
+
+                                    {/* UV Gauge */}
+                                    <div className="relative w-32 h-32 mx-auto mb-4">
+                                        <svg className="w-full h-full transform -rotate-90">
+                                            <circle
+                                                cx="64"
+                                                cy="64"
+                                                r="56"
+                                                stroke="#374151"
+                                                strokeWidth="12"
+                                                fill="none"
+                                            />
+                                            <circle
+                                                cx="64"
+                                                cy="64"
+                                                r="56"
+                                                stroke="url(#uvGradient)"
+                                                strokeWidth="12"
+                                                fill="none"
+                                                strokeDasharray={`${((current.uvi || 0) / 12) * 352} 352`}
+                                                className="transition-all duration-1000"
+                                            />
+                                            <defs>
+                                                <linearGradient id="uvGradient">
+                                                    <stop offset="0%" stopColor="#fbbf24" />
+                                                    <stop offset="100%" stopColor="#f97316" />
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="text-center">
+                                                <div className="text-3xl font-bold">{(current.uvi || 0).toFixed(1)}</div>
+                                                <div className="text-xs text-gray-400">UV</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center text-sm font-semibold">{(current.uvi || 0).toFixed(2)} uv</div>
+                                </div>
+
+                                {/* Sunrise and Sunset */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">Sunrise and sunset</div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="text-2xl">🌅</div>
+                                                <div className="text-sm text-gray-400">Sunrise</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-lg font-semibold">
+                                                    {new Date(current.sunrise * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                                <div className="text-xs text-gray-500">-1m 50s</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="text-2xl">🌇</div>
+                                                <div className="text-sm text-gray-400">Sunset</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-lg font-semibold">
+                                                    {new Date(current.sunset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                                <div className="text-xs text-gray-500">+2m 10s</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            );
-                        })}
+
+                                {/* Humidity */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">Humidity</div>
+
+                                    <div className="flex items-center justify-center mb-4">
+                                        <div className="text-6xl">💧</div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <div className="text-sm text-gray-400">The dew point is {Math.round(current.dew_point)}° right now</div>
+                                        <div className="text-3xl font-bold mt-2">{current.humidity}%</div>
+                                    </div>
+                                </div>
+
+                                {/* Visibility */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">Visibility</div>
+
+                                    <div className="flex items-center justify-center mb-4">
+                                        <div className="text-6xl">👁️</div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <div className="text-sm text-gray-400">Haze is affecting visibility</div>
+                                        <div className="text-3xl font-bold mt-2">{metersToKm(current.visibility)} km</div>
+                                    </div>
+                                </div>
+
+                                {/* Feels Like */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">Feels like</div>
+
+                                    <div className="flex items-center justify-center mb-4">
+                                        <div className="text-6xl">🌡️</div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <div className="text-sm text-gray-400">
+                                            {current.wind_chill < current.temp ? 'Wind is making it feel cooler' :
+                                                current.heat_index > current.temp ? 'Humidity is making it feel warmer' :
+                                                    'Similar to the actual temperature'}
+                                        </div>
+                                        <div className="text-3xl font-bold mt-2">{Math.round(current.feels_like)}°</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <style jsx>{`
+        @keyframes grow {
+          from {
+            height: 0;
+          }
+        }
+      `}</style>
         </div>
     );
 }
