@@ -1,0 +1,371 @@
+{
+  "name": "Historical Scraper workflow:",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "5a1f9e46-ec4a-46e0-8d54-d9b297770eeb",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.instagram.com/me/conversations",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "platform",
+              "value": "instagram"
+            },
+            {
+              "name": "fields",
+              "value": "id,participants,updated_time,message_count"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            },
+            {
+              "name": "access_token",
+              "value": "IGAATOQ4ECs6BBZAFpSVUVxa2FrcXZAXSTNvV0dZAUjdIQjJTbGt2LXI2bldhalJWZAzF6WC1xSHJKRGlfWHhKMlBNU1RJZAjBvbXM5UHlLNDg5Snh5UnBPNm1vc1hzcFdLOG9jaUpPY1ZA5S0pob0lsMFdRYVl4a29udUZAibFNmd04zQQZDZD"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "24c0dd9c-2803-48de-a628-ef0895b90ce2",
+      "name": "Get All Conversations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -960,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "eec8f1e4-f0c4-4c5e-90f9-00f7f89b6109",
+      "name": "Loop Over Conversations",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -512,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.instagram.com/{{ $json.participants.data[0].id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,username,name"
+            },
+            {
+              "name": "access_token",
+              "value": "IGAATOQ4ECs6BBZAFpSVUVxa2FrcXZAXSTNvV0dZAUjdIQjJTbGt2LXI2bldhalJWZAzF6WC1xSHJKRGlfWHhKMlBNU1RJZAjBvbXM5UHlLNDg5Snh5UnBPNm1vc1hzcFdLOG9jaUpPY1ZA5S0pob0lsMFdRYVl4a29udUZAibFNmd04zQQZDZD"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3bd30c84-5aee-4461-98aa-6c15d101b3cb",
+      "name": "Get Participant Profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -288,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.instagram.com/{{ $json.id }}/messages",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,from,to,message,created_time,attachments"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            },
+            {
+              "name": "access_token",
+              "value": "IGAATOQ4ECs6BBZAFpSVUVxa2FrcXZAXSTNvV0dZAUjdIQjJTbGt2LXI2bldhalJWZAzF6WC1xSHJKRGlfWHhKMlBNU1RJZAjBvbXM5UHlLNDg5Snh5UnBPNm1vc1hzcFdLOG9jaUpPY1ZA5S0pob0lsMFdRYVl4a29udUZAibFNmd04zQQZDZD"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b3fe2e05-e7ae-4b4c-bb61-240c8d8e1b1a",
+      "name": "Get All Messages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        384,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const messagesResponse = $input.first().json;\nconst messages = messagesResponse.data || [];\nconst conversationId = $('Upsert Conversation (Supabase)').item.json.id;\nconst businessId = '<__PLACEHOLDER_VALUE__Your Instagram Business Account ID__>';\n\nreturn messages.map(msg => ({\n  json: {\n    conversation_id: conversationId,\n    message_id: msg.id,\n    sender: msg.from?.id === businessId ? 'business' : 'customer',\n    content: msg.message || '',\n    attachment_type: msg.attachments?.[0]?.type || null,\n    attachment_url: msg.attachments?.[0]?.image_data?.url || msg.attachments?.[0]?.video_data?.url || null,\n    status: 'delivered',\n    created_at: msg.created_time\n  }\n}));"
+      },
+      "id": "b5af4c91-d759-487c-894f-83540b1a4432",
+      "name": "Transform Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "instagram_conversations",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "instagram_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.instagram_id }}"
+            }
+          ]
+        },
+        "dataToSend": "autoMapInputData"
+      },
+      "id": "583b2d39-566f-4377-84a9-974d1f1bae7c",
+      "name": "Upsert Conversation (Supabase)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -96
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "imxxVkQE1ZlUBN8k",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "instagram_messages",
+        "dataToSend": "autoMapInputData"
+      },
+      "id": "36345ca0-126c-4568-94de-d85d017ab754",
+      "name": "Insert Messages (Supabase)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        832,
+        -32
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "imxxVkQE1ZlUBN8k",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "instagram_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "username",
+              "value": "={{ $json.username }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "customer_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "id-7",
+              "name": "status",
+              "value": "active",
+              "type": "string"
+            },
+            {
+              "id": "id-8",
+              "name": "message_count",
+              "value": "={{ $json.message_count || 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f0af4b7a-6373-41b4-bb91-744021fa7b76",
+      "name": "Prepare Conversation Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -64,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "0d2fa0e3-bd17-43c9-a0fb-e5dc2e53e558",
+      "name": "Split Out Conversations",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        -32
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get All Conversations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Conversations": {
+      "main": [
+        [
+          {
+            "node": "Split Out Conversations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Conversations": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get Participant Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Participant Profile": {
+      "main": [
+        [
+          {
+            "node": "Prepare Conversation Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Messages": {
+      "main": [
+        [
+          {
+            "node": "Transform Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Messages": {
+      "main": [
+        [
+          {
+            "node": "Insert Messages (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Conversation (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Get All Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Messages (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Conversations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Conversation Data": {
+      "main": [
+        [
+          {
+            "node": "Upsert Conversation (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Conversations": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Conversations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cad2f983-6551-495f-bbc1-a0183d1eb680",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8d28a9671075f0b5891a19de3804cee75b0d422edb952b37771a7916cd08431c"
+  },
+  "id": "VWatXreoTcdu1Km4",
+  "tags": []
+}

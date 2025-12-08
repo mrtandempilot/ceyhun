@@ -1,0 +1,496 @@
+{
+  "name": "Instagram new",
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -2240,
+        1388
+      ],
+      "id": "ee628e60-a36a-4d38-86ea-eca888c94cba",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Extract Message Data').item.json.message_text }}",
+        "options": {
+          "systemMessage": "=You are a helpful assistant for easy riders in Fethiye, Turkey.\n\n📅 Current date: {{ $now() }}\n\n📊 TOUR INFORMATION:\n- Total pilots: 5\n- Maximum capacity per hour: 6 people\n\n🎯 YOUR ROLE:\n- Help customers book tours\n- Answer questions about our 7 tours\n- Provide tour information (prices, times, meeting points)\n- Speak Turkish or English (detect customer's language)\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1568,
+        1328
+      ],
+      "id": "f3ba6dd6-e9d6-46c2-bd55-14f240b36ca8",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.0-flash-001",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1496,
+        1552
+      ],
+      "id": "0017aae9-ca7e-450c-bdc1-e3b9baa12997",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "uIQOaz5ZmyMoYQdj",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.entry[0].messaging[0].message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "2a9193fe-d2d1-4afd-bb71-209942ef3e70"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -2240,
+        1580
+      ],
+      "id": "3f4bc785-a2e0-44ad-b7ab-c6d24c7bd323",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5bb43088-3775-472c-9930-50f5055b0e50",
+              "leftValue": "={{ $json.body.entry[0].messaging[0].message.is_echo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2016,
+        1580
+      ],
+      "id": "18f6cad6-561c-4219-9f08-00ab2318c86c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "78798362-e5a6-4849-bd8e-08a73b100437",
+              "name": "reply",
+              "value": "={{ $json.output.toJsonString() }}",
+              "type": "string"
+            },
+            {
+              "id": "a68af9ea-4fdc-4aa6-8eaa-f8343ef3bb8f",
+              "name": "version",
+              "value": "={{ $('If').item.json.headers['instagram-api-version'] }}",
+              "type": "string"
+            },
+            {
+              "id": "909f977b-8301-482d-8c04-8acb9b516cb1",
+              "name": "sender  id",
+              "value": "={{ $('If').item.json.body.entry[0].messaging[0].sender.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1216,
+        1432
+      ],
+      "id": "96b81ed6-d8c6-4894-81a8-e4c6117af0a0",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "path": "easyriders",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2464,
+        1488
+      ],
+      "id": "155cc7e9-ef72-4f43-bce5-edbc6dc60e15",
+      "name": "Webhook",
+      "webhookId": "855107d2-0060-46f1-832f-17e7a4cae85e"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "sender_id",
+              "value": "={{ $json.body.entry[0].messaging[0].sender.id }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "message_text",
+              "value": "={{ $json.body.entry[0].messaging[0].message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "message_id",
+              "value": "={{ $json.body.entry[0].messaging[0].message.mid }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "45996544-f977-41e4-946f-de7a8808d596",
+      "name": "Extract Message Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1792,
+        1580
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.instagram.com/{{ $('Extract Message Data').item.json.sender_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "instagramGraphApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,username,name,profile_pic,is_verified,follower_count"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $credentials.accessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2da96cc4-c8ee-48eb-a3b4-e4cfeeb46bb8",
+      "name": "Get Sender Profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1504,
+        1728
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const messageData = $input.first().json;\nconst messaging = messageData.body?.entry?.[0]?.messaging?.[0];\nconst attachments = messaging?.message?.attachments;\n\nlet attachmentType = null;\nlet attachmentUrl = null;\n\nif (attachments && attachments.length > 0) {\n  const attachment = attachments[0];\n  attachmentType = attachment.type;\n  if (attachment.payload) {\n    attachmentUrl = attachment.payload.url || null;\n  }\n}\n\nreturn [{\n  json: {\n    attachment_type: attachmentType,\n    attachment_url: attachmentUrl,\n    sender_id: $('Extract Message Data').item.json.sender_id,\n    message_text: $('Extract Message Data').item.json.message_text,\n    message_id: $('Extract Message Data').item.json.message_id\n  }\n}];"
+      },
+      "id": "1d845f04-fe73-4bef-8ec5-0574803ff89c",
+      "name": "Extract Attachments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1216,
+        1728
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.instagram.com/{{ $json.version }}/17841477275430202/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\n\"recipient\":{\n\n\"id\":\"{{ $json['sender  id'] }}\"\n\n},\n\n\"message\": {\n\n\"text\":{{ $json.reply }}\n}\n\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -992,
+        1432
+      ],
+      "id": "64f123ec-0356-487b-abe8-e22dcf91731f",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "D8hNOsoOP6iZhNgK",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO instagram_conversations (instagram_id, status) \nVALUES ('{{ $('Extract Message Data').item.json.sender_id }}', 'active') \nON CONFLICT (instagram_id) \nDO UPDATE SET last_message_at = NOW() \nRETURNING id",
+        "options": {}
+      },
+      "id": "b344faac-f3ba-4032-a233-b405b8ec3985",
+      "name": "Create/Update Conversation",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -992,
+        1728
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "dK8Z4Stj3yMH0EId",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO instagram_messages (conversation_id, message_id, sender, content, status) \nVALUES ({{ $('Create/Update Conversation').item.json.id }}, '{{ $('Extract Message Data').item.json.message_id }}', 'customer', '{{ $('Extract Message Data').item.json.message_text }}', 'delivered')",
+        "options": {}
+      },
+      "id": "0e6bcb3f-415c-48c8-83a9-5ed5428d53a3",
+      "name": "Save Incoming Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -768,
+        1728
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "dK8Z4Stj3yMH0EId",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO instagram_messages (conversation_id, message_id, sender, content, status) \nVALUES ({{ $('Create/Update Conversation').item.json.id }}, 'response_{{ Date.now() }}', 'business', '{{ $('AI Agent').item.json.output }}', 'sent')",
+        "options": {}
+      },
+      "id": "f5112513-9b0c-46e2-8e72-8e767bc006e0",
+      "name": "Save Business Response",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -768,
+        1432
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "dK8Z4Stj3yMH0EId",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Extract Message Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Message Data": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Sender Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Sender Profile": {
+      "main": [
+        [
+          {
+            "node": "Extract Attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Attachments": {
+      "main": [
+        [
+          {
+            "node": "Create/Update Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create/Update Conversation": {
+      "main": [
+        [
+          {
+            "node": "Save Incoming Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Save Business Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f4077277-8220-482e-8a81-4378795c4a19",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ba34220e0f4f8e17f045b18fe8166d8c46d500e391bb070bed4a4856a034ac94"
+  },
+  "id": "dL6XU01DHNd7gTAr",
+  "tags": []
+}

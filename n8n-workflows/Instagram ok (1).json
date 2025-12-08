@@ -115,7 +115,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO instagram_conversations (instagram_id, status) VALUES ('{{ $json.sender_id }}', 'active') ON CONFLICT (instagram_id) DO UPDATE SET last_message_at = NOW() RETURNING id",
+        "query": "INSERT INTO instagram_conversations (instagram_id, status) VALUES ('{{ $('Extract Message Data').item.json.sender_id }}', 'active') ON CONFLICT (instagram_id) DO UPDATE SET last_message_at = NOW() RETURNING id",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.postgreSql",
@@ -136,7 +136,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO instagram_messages (conversation_id, message_id, sender, content, status) VALUES ('{{ $json.id }}', '{{ $('Extract Message Data').item.json.message_id }}', 'customer', '{{ $('Extract Message Data').item.json.message_text }}', 'delivered')",
+        "query": "INSERT INTO instagram_messages (conversation_id, message_id, sender, content, status) VALUES ({{ $('Create/Update Conversation').item.json.id }}, '{{ $('Extract Message Data').item.json.message_id }}', 'customer', '{{ $('Extract Message Data').item.json.message_text }}', 'delivered')",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.postgreSql",
@@ -194,7 +194,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO instagram_messages (conversation_id, message_id, sender, content, status) VALUES ('{{ $('Create/Update Conversation').item.json.id }}', 'response_{{ Date.now() }}', 'business', '{{ $json.output.toJsonString() }}', 'sent')",
+        "query": "INSERT INTO instagram_messages (conversation_id, message_id, sender, content, status) VALUES ({{ $('Create/Update Conversation').item.json.id }}, 'response_{{ Date.now() }}', 'business', '{{ $('AI Agent').item.json.output }}', 'sent')",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.postgreSql",
