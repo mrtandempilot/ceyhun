@@ -11,9 +11,14 @@ import {
 
 const LandingPage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [expandedFaq, setExpandedFaq] = useState(null);
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [particles, setParticles] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    phone: string;
+    email: string;
+    modules: string[];
+  }>({
     name: '',
     phone: '',
     email: '',
@@ -185,7 +190,7 @@ const LandingPage = () => {
         ...prev,
         modules: checked
           ? [...prev.modules, value]
-          : prev.modules.filter(m => m !== value)
+          : prev.modules.filter((m: string) => m !== value)
       }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
