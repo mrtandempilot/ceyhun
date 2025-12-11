@@ -201,6 +201,13 @@ export default function Navbar() {
               Contact
             </Link>
 
+            <Link
+              href="/landing"
+              className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 rounded-full transition-all duration-300 font-semibold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 hover:scale-105"
+            >
+              AI Landing
+            </Link>
+
             {!loading && (
               <>
                 {user ? (
@@ -350,6 +357,14 @@ export default function Navbar() {
                 onClick={() => setIsOpen(false)}
               >
                 Contact
+              </Link>
+
+              <Link
+                href="/landing"
+                className="block py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 rounded-full transition-all duration-300 font-semibold text-center shadow-lg hover:shadow-xl"
+                onClick={() => setIsOpen(false)}
+              >
+                AI Landing
               </Link>
 
               {!loading && (

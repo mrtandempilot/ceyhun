@@ -318,7 +318,7 @@ export default function WeatherPage() {
                         <div>
                             <h2 className="text-2xl font-semibold mb-4">Today's overview</h2>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                                 {/* Wind Status */}
                                 <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
                                     <div className="text-gray-400 mb-4">Wind Status</div>
@@ -443,6 +443,25 @@ export default function WeatherPage() {
                                     </div>
                                 </div>
 
+                                {/* Thermal Forecast */}
+                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
+                                    <div className="text-gray-400 mb-4">🪂 Thermal Forecast</div>
+
+                                    <div className="flex items-center justify-center mb-4">
+                                        <div className={`text-6xl font-bold ${calculateThermalPotential(current.temp, current.temp + 2, current.wind_speed, current.clouds, new Date().getHours()).color
+                                            }`}>
+                                            {calculateThermalPotential(current.temp, current.temp + 2, current.wind_speed, current.clouds, new Date().getHours()).rating}
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <div className="text-sm text-gray-400">
+                                            {calculateThermalPotential(current.temp, current.temp + 2, current.wind_speed, current.clouds, new Date().getHours()).description}
+                                        </div>
+                                        <div className="text-xl font-bold mt-2">out of 10</div>
+                                    </div>
+                                </div>
+
                                 {/* Humidity */}
                                 <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
                                     <div className="text-gray-400 mb-4">Humidity</div>
@@ -486,25 +505,6 @@ export default function WeatherPage() {
                                                     'Similar to the actual temperature'}
                                         </div>
                                         <div className="text-3xl font-bold mt-2">{Math.round(current.feels_like)}°</div>
-                                    </div>
-                                </div>
-
-                                {/* Thermal Forecast */}
-                                <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
-                                    <div className="text-gray-400 mb-4">🪂 Thermal Forecast</div>
-
-                                    <div className="flex items-center justify-center mb-4">
-                                        <div className={`text-6xl font-bold ${calculateThermalPotential(current.temp, current.temp + 2, current.wind_speed, current.clouds, new Date().getHours()).color
-                                            }`}>
-                                            {calculateThermalPotential(current.temp, current.temp + 2, current.wind_speed, current.clouds, new Date().getHours()).rating}
-                                        </div>
-                                    </div>
-
-                                    <div className="text-center">
-                                        <div className="text-sm text-gray-400">
-                                            {calculateThermalPotential(current.temp, current.temp + 2, current.wind_speed, current.clouds, new Date().getHours()).description}
-                                        </div>
-                                        <div className="text-xl font-bold mt-2">out of 10</div>
                                     </div>
                                 </div>
 

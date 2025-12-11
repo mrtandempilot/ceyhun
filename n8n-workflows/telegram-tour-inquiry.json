@@ -1,0 +1,223 @@
+{
+    "name": "Telegram Tour Inquiry Handler",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "telegram-tour-inquiry",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Telegram Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                300
+            ],
+            "webhookId": "telegram-tour-inquiry"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Extract message from Telegram webhook\nconst body = $input.first().json.body;\nconst message = body.message;\n\nif (!message || !message.text) {\n  // No text message, skip processing\n  return [];\n}\n\nconst messageText = message.text.toLowerCase();\nconst chatId = message.chat.id;\nconst userId = message.from.id;\nconst userName = `${message.from.first_name || ''} ${message.from.last_name || ''}`.trim();\n\n// Define tour keywords\nconst tourKeywords = {\n  paragliding: ['paragliding', 'tandem', 'fly', 'flight', 'parachute', 'gliding'],\n  diving: ['diving', 'scuba', 'underwater', 'dive'],\n  boat: ['boat', 'cruise', 'sailing', 'yacht'],\n  safari: ['safari', 'jeep', 'adventure'],\n  rafting: ['rafting', 'river', 'rapids']\n};\n\n// Check if message contains tour keywords\nlet detectedTour = null;\nfor (const [tourType, keywords] of Object.entries(tourKeywords)) {\n  if (keywords.some(keyword => messageText.includes(keyword))) {\n    detectedTour = tourType;\n    break;\n  }\n}\n\nif (!detectedTour) {\n  // No tour keyword detected, skip\n  return [];\n}\n\nreturn {\n  json: {\n    chat_id: chatId,\n    user_id: userId,\n    user_name: userName,\n    message_text: message.text,\n    detected_tour: detectedTour,\n    search_keyword: detectedTour\n  }\n};"
+            },
+            "id": "detect-keywords",
+            "name": "Detect Tour Keywords",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "=SELECT \n  id,\n  name,\n  description,\n  base_price,\n  currency,\n  duration_minutes,\n  image_urls,\n  slug\nFROM tour_packages\nWHERE status = 'active'\n  AND (\n    LOWER(name) LIKE '%{{ $json.search_keyword }}%'\n    OR LOWER(description) LIKE '%{{ $json.search_keyword }}%'\n  )\nLIMIT 3;",
+                "options": {}
+            },
+            "id": "fetch-tours",
+            "name": "Fetch Tours from Supabase",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.4,
+            "position": [
+                640,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase-db",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Get tour data and chat info\nconst tours = $input.all();\nconst chatData = $('Detect Tour Keywords').first().json;\n\nif (tours.length === 0) {\n  // No tours found, send generic message\n  return {\n    json: {\n      chat_id: chatData.chat_id,\n      message_type: 'no_tours',\n      text: `Sorry, we couldn't find any tours matching \"${chatData.detected_tour}\". Please visit our website or contact us for more information! 🌟`\n    }\n  };\n}\n\n// Prepare tour messages\nconst tourMessages = tours.map(item => {\n  const tour = item.json;\n  const imageUrl = tour.image_urls && tour.image_urls.length > 0 ? tour.image_urls[0] : null;\n  \n  // Format duration\n  const hours = Math.floor(tour.duration_minutes / 60);\n  const minutes = tour.duration_minutes % 60;\n  let durationText = '';\n  if (hours > 0) durationText += `${hours}h `;\n  if (minutes > 0) durationText += `${minutes}m`;\n  \n  // Create caption with tour details\n  const caption = `🎯 **${tour.name}**\\n\\n` +\n    `${tour.description || 'An amazing adventure awaits you!'}\\n\\n` +\n    `💰 **Price:** ${tour.base_price} ${tour.currency || 'USD'}\\n` +\n    `⏱️ **Duration:** ${durationText.trim()}\\n\\n` +\n    `📅 Book now: https://ceyhun.vercel.app/tours/${tour.slug || tour.id}`;\n  \n  return {\n    chat_id: chatData.chat_id,\n    image_url: imageUrl,\n    caption: caption,\n    tour_name: tour.name\n  };\n});\n\nreturn tourMessages;"
+            },
+            "id": "prepare-messages",
+            "name": "Prepare Tour Messages",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                840,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "telegram_bot_token",
+                "options": {}
+            },
+            "id": "get-bot-token",
+            "name": "Get Telegram Bot Token",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.4,
+            "position": [
+                840,
+                450
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase-db",
+                    "name": "Supabase PostgreSQL"
+                }
+            },
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT value FROM credentials WHERE platform = 'telegram' AND credential_key = 'telegram_bot_token' LIMIT 1;",
+                "options": {}
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://api.telegram.org/bot{{ $('Get Telegram Bot Token').first().json.value }}/sendPhoto",
+                "sendBody": true,
+                "contentType": "json",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chat_id",
+                            "value": "={{ $json.chat_id }}"
+                        },
+                        {
+                            "name": "photo",
+                            "value": "={{ $json.image_url }}"
+                        },
+                        {
+                            "name": "caption",
+                            "value": "={{ $json.caption }}"
+                        },
+                        {
+                            "name": "parse_mode",
+                            "value": "Markdown"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "send-photo",
+            "name": "Send Tour Photo",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1040,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": true, \"message\": \"Tour information sent\" } }}",
+                "options": {}
+            },
+            "id": "respond",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1240,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Telegram Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Detect Tour Keywords",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Detect Tour Keywords": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Tours from Supabase",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Tours from Supabase": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Tour Messages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Tour Messages": {
+            "main": [
+                [
+                    {
+                        "node": "Get Telegram Bot Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Telegram Bot Token": {
+            "main": [
+                [
+                    {
+                        "node": "Send Tour Photo",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Tour Photo": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "timezone": "Europe/Istanbul",
+        "executionOrder": "v1"
+    },
+    "versionId": "1",
+    "meta": {},
+    "tags": []
+}

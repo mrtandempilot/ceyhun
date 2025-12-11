@@ -188,6 +188,16 @@ export default function DashboardLayout({
                                 <span className="text-sm font-medium">System Status</span>
                             </Link>
                             <Link
+                                href="/dashboard/landing"
+                                className={`flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors ${pathname === '/dashboard/landing' ? 'bg-indigo-600 text-white' : ''
+                                    }`}
+                            >
+                                <svg className="w-5 h-5 mr-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span className="text-sm font-medium">Landing Page</span>
+                            </Link>
+                            <Link
                                 href="/dashboard/settings"
                                 className={`flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors ${pathname === '/dashboard/settings' ? 'bg-purple-600 text-white' : ''
                                     }`}
