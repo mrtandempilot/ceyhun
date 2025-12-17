@@ -107,7 +107,6 @@ export default function TelegramChatPage() {
 
   useEffect(() => {
     fetchConversations();
-    setLastRefresh(new Date());
   }, []);
 
   useEffect(() => {
@@ -118,43 +117,55 @@ export default function TelegramChatPage() {
     }
   }, [selectedConversationId]);
 
-  // Auto-refresh conversations every 30 seconds
+  // Real-time updates using Server-Sent Events
   useEffect(() => {
     if (!autoRefresh) return;
 
-    const conversationRefreshInterval = setInterval(async () => {
+    console.log('🔗 Connecting to SSE...');
+
+    const eventSource = new EventSource('/api/sse/telegram');
+
+    eventSource.onopen = () => {
+      console.log('🔗 SSE connection established');
+      setLastRefresh(new Date());
+    };
+
+    eventSource.onmessage = (event) => {
       try {
-        const response = await fetch('/api/conversations/telegram');
-        if (response.ok) {
-          const data = await response.json();
-          setConversations(data);
-          setLastRefresh(new Date());
+        const update = JSON.parse(event.data);
+
+        if (update.type === 'connected') {
+          console.log('🔗 SSE connected and ready');
+          return;
         }
-      } catch (err) {
-        console.error('Auto-refresh conversations failed:', err);
-      }
-    }, 30000); // 30 seconds
 
-    return () => clearInterval(conversationRefreshInterval);
-  }, [autoRefresh]);
+        console.log('🔗 SSE update received:', update.type);
 
-  // Auto-refresh current conversation messages every 10 seconds
-  useEffect(() => {
-    if (!autoRefresh || !selectedConversationId) return;
-
-    const messageRefreshInterval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/conversations/telegram?conversationId=${selectedConversationId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setMessages(data);
+        if (update.type === 'conversations') {
+          // Refresh conversations list
+          fetchConversations();
+        } else if (update.type === 'messages' && selectedConversationId) {
+          // Refresh current conversation if it's the updated one
+          if (update.data.conversation_id === selectedConversationId) {
+            fetchMessages(selectedConversationId);
+          }
         }
-      } catch (err) {
-        console.error('Auto-refresh messages failed:', err);
-      }
-    }, 10000); // 10 seconds
 
-    return () => clearInterval(messageRefreshInterval);
+        setLastRefresh(new Date());
+      } catch (error) {
+        console.error('❌ SSE message parse error:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('❌ SSE connection error:', error);
+      setAutoRefresh(false); // Disable auto-refresh on error
+    };
+
+    return () => {
+      console.log('🔌 Closing SSE connection');
+      eventSource.close();
+    };
   }, [autoRefresh, selectedConversationId]);
 
   const filteredConversations = conversations.filter(conv => {

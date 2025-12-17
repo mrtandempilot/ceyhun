@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { broadcastTelegramUpdate } from '../../sse/telegram/route';
 
 // API endpoint for n8n to save messages to dashboard
 export async function POST(request: NextRequest) {
@@ -69,6 +70,29 @@ export async function POST(request: NextRequest) {
       .eq('id', conversationId);
 
     console.log('💾 Message saved:', savedMessage.id);
+
+    // Broadcast realtime updates to connected dashboard clients
+    try {
+      // Broadcast message update (for current conversation)
+      const messageData = {
+        conversation_id: conversationId,
+        message: savedMessage,
+        conversationId: conversationId
+      };
+      broadcastTelegramUpdate('messages', messageData);
+
+      // Broadcast conversations update (to refresh list)
+      const conversationData = {
+        conversation_id: conversationId,
+        action: 'update'
+      };
+      broadcastTelegramUpdate('conversations', conversationData);
+
+      console.log('📡 Real-time updates broadcasted');
+    } catch (broadcastError) {
+      console.error('❌ Broadcast error:', broadcastError);
+      // Don't fail the request if broadcasting fails
+    }
 
     return NextResponse.json({
       success: true,
