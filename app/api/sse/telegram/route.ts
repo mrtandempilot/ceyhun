@@ -1,6 +1,9 @@
 import { NextRequest } from 'next/server';
 import { addSSEClient, removeSSEClient } from '@/lib/sse-utils';
 
+// Force dynamic rendering for SSE endpoint
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   // Create a unique client ID
   const clientId = Math.random().toString(36).substring(2);
