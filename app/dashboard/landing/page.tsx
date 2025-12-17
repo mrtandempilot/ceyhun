@@ -29,6 +29,8 @@ interface TelegramConversation {
     created_at: string;
   };
   messageCount: number;
+  manualModeActive?: boolean;
+  manualModeExpiresAt?: string | null;
 }
 
 export default function TelegramChatPage() {
@@ -116,6 +118,34 @@ export default function TelegramChatPage() {
       setMessages([]);
     }
   }, [selectedConversationId]);
+
+  // Function to toggle manual mode for a conversation
+  const toggleManualMode = async (conversationId: string, telegramChatId: number, enable: boolean) => {
+    try {
+      const response = await fetch('/api/telegram/check-manual-mode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: telegramChatId.toString(),
+          action: enable ? 'enable' : 'disable'
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update manual mode');
+
+      const result = await response.json();
+      console.log('✅ Manual mode updated:', result);
+
+      // Refresh conversations to update status
+      await fetchConversations();
+
+    } catch (err) {
+      console.error('❌ Error toggling manual mode:', err);
+      alert('Failed to update conversation mode. Please try again.');
+    }
+  };
 
   // Real-time updates using Server-Sent Events
   useEffect(() => {
@@ -267,13 +297,30 @@ export default function TelegramChatPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-1">
                           <p className="text-sm font-medium text-gray-900 truncate">
                             {conv.customer_name || `@${conv.customer_username}` || `Chat ${conv.telegram_chat_id}`}
                           </p>
-                          <span className="text-xs text-gray-500">
-                            {new Date(conv.last_message_at).toLocaleDateString()}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleManualMode(conv.id, conv.telegram_chat_id, !conv.manualModeActive);
+                              }}
+                              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                conv.manualModeActive
+                                  ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                              }`}
+                              title={conv.manualModeActive ? 'Bot susturulmuş - Manuel konuşma' : 'Bot aktif - Otomatik yanıt'}
+                            >
+                              {conv.manualModeActive ? '🤖⛔' : '🤖✅'}
+                              {conv.manualModeActive ? 'Manual' : 'Auto'}
+                            </button>
+                            <span className="text-xs text-gray-500">
+                              {new Date(conv.last_message_at).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                         <p className="text-xs text-gray-500 truncate mt-0.5">
                           ID: {conv.telegram_chat_id}

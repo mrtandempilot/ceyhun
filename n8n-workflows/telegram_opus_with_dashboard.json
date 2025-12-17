@@ -27,6 +27,78 @@
     },
     {
       "parameters": {
+        "method": "GET",
+        "url": "https://ceyhun.vercel.app/api/telegram/check-manual-mode",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "specifyQuery": "keyQuery",
+        "queryParameters": {
+          "keyQuery": {
+            "chat_id": "={{ $json.message.chat.id }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        32
+      ],
+      "id": "check-manual-mode-node",
+      "name": "Check Manual Mode"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "manual_mode_active",
+              "leftValue": "={{ $('Check Manual Mode').item.json.manual_mode_active }}",
+              "rightValue": true,
+              "operator": {
+                "type": "equal",
+                "operation": "equal"
+              }
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        140
+      ],
+      "id": "manual-mode-condition-node",
+      "name": "Manual Mode Check"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOperation",
+      "typeVersion": 1,
+      "position": [
+        640,
+        200
+      ],
+      "id": "stop-if-manual-node",
+      "name": "Stop - Manual Mode Active"
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://ceyhun.vercel.app/api/telegram/save-message",
         "sendHeaders": true,
@@ -432,6 +504,37 @@
   "connections": {
     "Telegram Trigger": {
       "main": [
+        [
+          {
+            "node": "Check Manual Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Manual Mode": {
+      "main": [
+        [
+          {
+            "node": "Manual Mode Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Mode Check": {
+      "main": [
+        [
+          {
+            "node": "Stop - Manual Mode Active",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "false": [
         [
           {
             "node": "Save User Message",
