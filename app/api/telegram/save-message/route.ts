@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { broadcastTelegramUpdate } from '../../sse/telegram/route';
+import { broadcastTelegramUpdate } from '@/lib/sse-utils';
 
 // API endpoint for n8n to save messages to dashboard
 export async function POST(request: NextRequest) {
