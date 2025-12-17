@@ -91,15 +91,29 @@ export async function POST(request: NextRequest) {
 
     try {
       // First, try to find existing conversation
-      let { data: existingConv, error: findError } = await supabaseAdmin
+      console.log('🔍 Looking up conversation for chatId:', chatId, 'as string:', chatId.toString());
+
+      let { data: conversations, error: findError } = await supabaseAdmin
         .from('telegram_conversations')
         .select('id')
-        .eq('telegram_chat_id', chatId.toString())
-        .single();
+        .eq('telegram_chat_id', chatId.toString()); // Remove .single() to see if we get array
 
-      if (findError && findError.code !== 'PGRST116') { // PGRST116 means no rows found
+      console.log('🔍 Conversation lookup result:', { conversations, findError });
+
+      let existingConv = null;
+      if (findError) {
         console.error('❌ Error looking up conversation:', findError);
-        throw findError;
+        // Try without .single() and check if array is empty
+        if (findError.message?.includes('coerce')) {
+          console.log('📝 Table might not exist, trying anyway...');
+          existingConv = null; // Assume conversation doesn't exist
+        } else {
+          throw findError;
+        }
+      } else if (conversations && conversations.length > 0) {
+        existingConv = conversations[0]; // Get first result
+      } else {
+        existingConv = null; // No conversation found
       }
 
       if (!existingConv) {
