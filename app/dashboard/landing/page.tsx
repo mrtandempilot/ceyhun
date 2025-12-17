@@ -41,6 +41,8 @@ export default function TelegramChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [replyMessage, setReplyMessage] = useState('');
+  const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const fetchConversations = async () => {
     setLoading(true);
@@ -105,6 +107,7 @@ export default function TelegramChatPage() {
 
   useEffect(() => {
     fetchConversations();
+    setLastRefresh(new Date());
   }, []);
 
   useEffect(() => {
@@ -114,6 +117,45 @@ export default function TelegramChatPage() {
       setMessages([]);
     }
   }, [selectedConversationId]);
+
+  // Auto-refresh conversations every 30 seconds
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const conversationRefreshInterval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/conversations/telegram');
+        if (response.ok) {
+          const data = await response.json();
+          setConversations(data);
+          setLastRefresh(new Date());
+        }
+      } catch (err) {
+        console.error('Auto-refresh conversations failed:', err);
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(conversationRefreshInterval);
+  }, [autoRefresh]);
+
+  // Auto-refresh current conversation messages every 10 seconds
+  useEffect(() => {
+    if (!autoRefresh || !selectedConversationId) return;
+
+    const messageRefreshInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/conversations/telegram?conversationId=${selectedConversationId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setMessages(data);
+        }
+      } catch (err) {
+        console.error('Auto-refresh messages failed:', err);
+      }
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(messageRefreshInterval);
+  }, [autoRefresh, selectedConversationId]);
 
   const filteredConversations = conversations.filter(conv => {
     if (!searchTerm) return true;
@@ -139,16 +181,37 @@ export default function TelegramChatPage() {
               <MessageCircle className="w-8 h-8" />
               Telegram Chat
             </h1>
-            <p className="text-gray-600 mt-1">Chat with your Telegram customers</p>
+            <p className="text-gray-600 mt-1 flex items-center gap-4">
+              <span>Real-time chat with your Telegram customers</span>
+              {autoRefresh && (
+                <span className="flex items-center gap-1 text-green-600 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  Live • Last updated: {lastRefresh.toLocaleTimeString()}
+                </span>
+              )}
+            </p>
           </div>
-          <button
-            onClick={fetchConversations}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                autoRefresh
+                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              {autoRefresh ? '🔄' : '⏸️'}
+              {autoRefresh ? 'Auto' : 'Manual'}
+            </button>
+            <button
+              onClick={fetchConversations}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {error && (
