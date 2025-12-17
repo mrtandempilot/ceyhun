@@ -223,50 +223,51 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const customerEmail = searchParams.get('customer_email');
-
-    // If customer_email is provided, this is an admin request
-    if (customerEmail) {
-      // Use admin client to bypass RLS
-      const { data, error } = await supabaseAdmin
-        .from('bookings')
-        .select('id, user_id, customer_name, customer_email, customer_phone, tour_name, booking_date, tour_start_time, adults, children, duration, channel, status, total_amount, google_calendar_event_id, notes, hotel_name, created_at, updated_at, ticket_id')
-        .eq('customer_email', customerEmail)
-        .order('booking_date', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching bookings by email:', error);
-        return NextResponse.json({ error: error.message }, { status: 400 });
-      }
-
-      return NextResponse.json(data || []);
-    }
-
-    // Regular user request - require authentication
     const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    let user = null;
+
+    // Get authenticated user if token provided
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+      if (!authError && authUser) {
+        user = authUser;
+      }
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data, error } = await supabase
+    // Use admin client to bypass RLS and fetch all relevant bookings
+    const { data, error } = await supabaseAdmin
       .from('bookings')
       .select('id, user_id, customer_name, customer_email, customer_phone, tour_name, booking_date, tour_start_time, adults, children, duration, channel, status, total_amount, google_calendar_event_id, notes, hotel_name, created_at, updated_at, ticket_id')
-      .eq('user_id', user.id)
       .order('booking_date', { ascending: false });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json(data);
+    // If no authenticated user, return empty array (not authorized)
+    if (!user) {
+      return NextResponse.json([]);
+    }
+
+    // Filter bookings for this user:
+    // 1. Bookings with matching user_id (regular web bookings)
+    // 2. Instagram bookings with matching email (Instagram customers)
+    const filteredBookings = data.filter(booking => {
+      // Regular user bookings
+      if (booking.user_id === user.id) {
+        return true;
+      }
+
+      // Instagram bookings for this user's email
+      if (booking.channel === 'instagram' && booking.customer_email === user.email) {
+        return true;
+      }
+
+      return false;
+    });
+
+    return NextResponse.json(filteredBookings);
   } catch (error: any) {
     console.error('Error fetching bookings:', error);
     return NextResponse.json(
