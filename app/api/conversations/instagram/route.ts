@@ -100,35 +100,37 @@ export async function POST(request: NextRequest) {
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversationId);
 
-    // Send to Instagram via API
+    // Send to Instagram via API - using the same token as n8n workflow
+    const INSTAGRAM_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN || 'IGAAVCDzt1sIxBZAFlqUnJtejhGNGZAWdThlTG9QYkMyYWxISVBBUVZA6T0NVU2NET3pUQkJVUUNlcXlWMTYyRFFSNEN1M25oZAFlSemVaZAUFuZA0VYN2NYOG9HNkpfV3pEZAG92MHhSZA1pZAWFJkM1dmZA3dUNWU2Nl93LTFHNFZAJR3NlYwZDZD';
+    
+    // recipient.id'yi kullanarak gönder - n8n workflow'daki gibi
     try {
-      const INSTAGRAM_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
-      const INSTAGRAM_PAGE_ID = process.env.INSTAGRAM_PAGE_ID;
-
-      if (INSTAGRAM_ACCESS_TOKEN && INSTAGRAM_PAGE_ID) {
-        const response = await fetch(
-          `https://graph.instagram.com/v21.0/${INSTAGRAM_PAGE_ID}/messages`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${INSTAGRAM_ACCESS_TOKEN}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              recipient: { id: conversation.instagram_id },
-              message: { text: message }
-            })
-          }
-        );
-
-        if (!response.ok) {
-          console.error('❌ Instagram API error:', await response.text());
-        } else {
-          console.log('✅ Message sent to Instagram');
+      const response = await fetch(
+        `https://graph.instagram.com/v21.0/me/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${INSTAGRAM_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            recipient: { id: conversation.instagram_id },
+            message: { text: message }
+          })
         }
+      );
+
+      const responseText = await response.text();
+      
+      if (!response.ok) {
+        console.error('❌ Instagram API error:', responseText);
+        // Still return success since message is saved to DB
+      } else {
+        console.log('✅ Message sent to Instagram:', responseText);
       }
     } catch (sendError) {
       console.error('❌ Failed to send to Instagram:', sendError);
+      // Don't throw - message is already saved to database
     }
 
     return NextResponse.json({
