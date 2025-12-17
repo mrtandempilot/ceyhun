@@ -31,73 +31,78 @@ interface TelegramConversation {
 }
 
 export async function GET(request: NextRequest) {
+  console.log('🔍 Telegram API called:', request.url);
+
   try {
     const { searchParams } = new URL(request.url);
     const conversationId = searchParams.get('conversationId');
 
+    console.log('🔍 Query params:', { conversationId });
+
     if (conversationId) {
       // Fetch specific conversation messages
+      console.log('🔍 Fetching messages for conversation:', conversationId);
+
       const { data: messages, error } = await supabaseAdmin
         .from('telegram_messages')
         .select('*')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching messages:', error);
+        throw error;
+      }
 
+      console.log('✅ Messages found:', messages?.length || 0);
       return NextResponse.json(messages || []);
     } else {
-      // Fetch all conversations (simplified first to debug)
+      // Fetch all conversations
+      console.log('🔍 Fetching all telegram conversations...');
+
       const { data: conversations, error } = await supabaseAdmin
         .from('telegram_conversations')
         .select('*')
         .order('last_message_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching telegram_conversations:', error);
-        // If table doesn't exist, return empty array instead of error
-        if (error.code === 'PGRST116' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
-          console.log('telegram_conversations table does not exist, returning empty array');
-          return NextResponse.json([]);
+        console.error('❌ Error fetching telegram_conversations:', error);
+        // Check for specific errors
+        if (error.message?.includes('RLS') || error.message?.includes('policy')) {
+          console.error('RLS policy error - checking policies...');
         }
-        throw error;
+        return NextResponse.json([]);
       }
 
-      console.log('Raw conversations data:', conversations);
+      console.log('✅ Raw conversations found:', conversations?.length || 0);
 
-      // For each conversation, get the last message and count manually
+      // Process conversations to add last message and count
       const processedConversations: TelegramConversation[] = [];
 
-      if (conversations) {
+      if (conversations && conversations.length > 0) {
+        console.log('🔍 Processing', conversations.length, 'conversations...');
+
         for (const conv of conversations) {
           try {
+            console.log('🔍 Processing conversation:', conv.id, conv.customer_name);
+
             // Get message count
             const { count: messageCount, error: countError } = await supabaseAdmin
               .from('telegram_messages')
               .select('*', { count: 'exact', head: true })
               .eq('conversation_id', conv.id);
 
-            // Get last message
-            const { data: lastMessageData, error: lastMsgError } = await supabaseAdmin
-              .from('telegram_messages')
-              .select('message_text, sender, created_at')
-              .eq('conversation_id', conv.id)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single();
+            if (countError) {
+              console.error('❌ Error counting messages for', conv.id, ':', countError);
+            }
 
             processedConversations.push({
               ...conv,
-              lastMessage: !lastMsgError && lastMessageData ? {
-                message_text: lastMessageData.message_text,
-                sender: lastMessageData.sender,
-                created_at: lastMessageData.created_at
-              } : undefined,
+              lastMessage: undefined, // Skip last message for now
               messageCount: messageCount || 0
             });
           } catch (e) {
-            console.error(`Error processing conversation ${conv.id}:`, e);
-            // Still add the conversation even if message fetch fails
+            console.error(`❌ Error processing conversation ${conv.id}:`, e);
             processedConversations.push({
               ...conv,
               messageCount: 0
@@ -106,13 +111,13 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      console.log('Processed conversations:', processedConversations);
+      console.log('✅ Processed conversations:', processedConversations.length);
       return NextResponse.json(processedConversations);
     }
   } catch (error: any) {
-    console.error('Error fetching Telegram conversations:', error);
+    console.error('❌ Critical error in Telegram API:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch conversations' },
+      { error: error.message || 'Failed to fetch conversations', details: error.stack },
       { status: 500 }
     );
   }
