@@ -47,40 +47,66 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(messages || []);
     } else {
-      // Fetch all conversations with last message and count
+      // Fetch all conversations (simplified first to debug)
       const { data: conversations, error } = await supabaseAdmin
         .from('telegram_conversations')
-        .select(`
-          *,
-          telegram_messages (
-            id,
-            message_text,
-            sender,
-            created_at
-          )
-        `)
+        .select('*')
         .order('last_message_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching telegram_conversations:', error);
+        // If table doesn't exist, return empty array instead of error
+        if (error.code === 'PGRST116' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+          console.log('telegram_conversations table does not exist, returning empty array');
+          return NextResponse.json([]);
+        }
+        throw error;
+      }
 
-      // Process conversations to add last message and message count
-      const processedConversations: TelegramConversation[] = conversations?.map((conv: any) => {
-        const messages = conv.telegram_messages || [];
-        const sortedMessages = messages.sort((a: any, b: any) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
+      console.log('Raw conversations data:', conversations);
 
-        return {
-          ...conv,
-          lastMessage: sortedMessages.length > 0 ? {
-            message_text: sortedMessages[sortedMessages.length - 1].message_text,
-            sender: sortedMessages[sortedMessages.length - 1].sender,
-            created_at: sortedMessages[sortedMessages.length - 1].created_at
-          } : undefined,
-          messageCount: sortedMessages.length
-        };
-      }) || [];
+      // For each conversation, get the last message and count manually
+      const processedConversations: TelegramConversation[] = [];
 
+      if (conversations) {
+        for (const conv of conversations) {
+          try {
+            // Get message count
+            const { count: messageCount, error: countError } = await supabaseAdmin
+              .from('telegram_messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('conversation_id', conv.id);
+
+            // Get last message
+            const { data: lastMessageData, error: lastMsgError } = await supabaseAdmin
+              .from('telegram_messages')
+              .select('message_text, sender, created_at')
+              .eq('conversation_id', conv.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+
+            processedConversations.push({
+              ...conv,
+              lastMessage: !lastMsgError && lastMessageData ? {
+                message_text: lastMessageData.message_text,
+                sender: lastMessageData.sender,
+                created_at: lastMessageData.created_at
+              } : undefined,
+              messageCount: messageCount || 0
+            });
+          } catch (e) {
+            console.error(`Error processing conversation ${conv.id}:`, e);
+            // Still add the conversation even if message fetch fails
+            processedConversations.push({
+              ...conv,
+              messageCount: 0
+            });
+          }
+        }
+      }
+
+      console.log('Processed conversations:', processedConversations);
       return NextResponse.json(processedConversations);
     }
   } catch (error: any) {
