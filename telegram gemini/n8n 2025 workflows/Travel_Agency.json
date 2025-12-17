@@ -1,0 +1,486 @@
+{
+  "name": "Travel Agency",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "mode": "webhook",
+        "options": {
+          "allowedOrigins": "*",
+          "responseMode": "responseNode"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1500,
+        100
+      ],
+      "id": "8b13d025-46a9-4901-9bc5-57237dedfc5c",
+      "name": "When chat message received",
+      "webhookId": "944425b3-7af5-47de-8490-9e6332e1185d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1c3507c3-83b1-4e66-96dc-be77bcbeb8d3",
+              "name": "text",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1060,
+        0
+      ],
+      "id": "b10744c2-5e07-4b6d-9496-444975156ca4",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=You are a helpful assistant working for a local travel agency in Fethiye.\n\n🌍 You only answer questions related to tours and services offered by our company.  \n❌ Do not respond to unrelated topics like airline tickets, visa help, hotels, or general travel advice outside of our tours.\n\n📅 The current date and time is: {{ $now() }}\n\n📦 Our tours are listed in a database with details like:\n\n- Product Name  \n- Product Price (€)  \n- Duration  \n- Start Time  \n- Meeting Point  \n- Google Maps Link  \n- What's Included / Not Included  \n- Availability  \n- Pickup Info  \n- Age Limit  \n- Cancellation Policy  \n- Languages  \n- Short & Full Descriptions  \n- Tags / Keywords  \n- Customer Rating\n\n📍 If someone asks where a tour starts or how to get there, respond with the **meeting point** and include the **Google Maps link**.\n\n✈️ If the user says \"flight\", assume they mean **paragliding from Babadağ**, unless they clearly ask about airports or plane tickets.\n\n---\n\n🧠 Use memory (Supabase) to remember their interests and preferences.  \nAlways try to extract and store memory based on user input, including:\n\n- Tour choice  \n- Desired date or time  \n- Number of people  \n- Pickup or meeting  \n- Hotel name  \n- Phone number  \n- Name  \n- Email  \n- Special requests\n\n📌 **IMPORTANT**: After every user message, do the following:\n\n1. Try to call the `Store_Memory` tool in the background.  \n   If for some reason you do not call it directly, at least return values for:\n   - `memory`\n   - `customer_name`\n   - `customer_email`\n   - `customer_phone`\n   - `hotel_name`\n   - `tour_name`\n   - `tour_date`\n   - `start_time`\n\n2. You may call the `Get_Memory` tool to recall previously saved user details.\n\n---\n\n🗣️ Speak like a friendly, expert local guide.  \nNever say you use Google Sheets, Supabase, or AI tools — you are just a helpful human working at the agency.\n\n🚫 If asked about hotels, visas, or airline flights, say:  \n\"I can only help with our local tours and experiences in Fethiye.\"\n\n---\n\n✅ If the user wants to make a booking:\n\n- First ask:  \n  > \"Will you come to our office, or would you like to be picked up from your hotel?\"\n\n- If they choose pickup, ask for the hotel name.\n\n- Then ask for:  \n  - Name  \n  - Email  \n  - Phone number  \n  - Tour name  \n  - Tour date  \n  - Tour time  \n  - Number of people  \n  - Special requests (optional)\n\n📢 **CRITICAL BOOKING WORKFLOW**:  \n1. FIRST: Use the `Create_Booking` tool to save the booking  \n2. IMMEDIATELY AFTER: Use the `Send_Telegram_Notification` tool to notify the office  \n3. THEN: Confirm the booking details to the customer\n\n**You MUST follow this exact sequence for every booking — no exceptions!**\n\n---\n\n🚐 Pickup Instructions:\n\n- If the user chooses **pickup** and gives a hotel name:  \n  > \"✅ We will pick you up from your hotel 30 minutes before your tour time.\"\n\n- If the user chooses to **come to the office**:  \n  > \"✅ Please come to our office at least 20 minutes before your scheduled tour time. I'll provide you with the exact location and Google Maps link.\"\n\n---\n\n📝 After a booking is saved AND notification is sent, always confirm the booking back to the customer, including:\n\n- Tour name and date  \n- Start time  \n- Pickup or meeting instructions  \n- What to bring or expect if needed  \n- Contact information for any questions\n\n🔔 **NOTIFICATION REQUIREMENTS**:  \nThe Telegram notification must include:\n\n- Customer name, email, and phone  \n- Tour name and date  \n- Start time and number of people  \n- Hotel name (if pickup) or meeting point (if office)  \n- Any special requests  \n- Session ID for reference\n\n🌐 Be ready to switch between Turkish and English depending on the user's language.\n\nAlways be helpful, friendly, and focused on providing excellent customer service for our tour bookings!\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -568,
+        0
+      ],
+      "id": "d657ba95-c0a4-47e9-857b-48b93d88c53f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('When chat message received').item.json.sessionId }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -720,
+        220
+      ],
+      "id": "303adf22-d357-45ed-a01b-2202cba30db4",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.0-flash-001",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -840,
+        220
+      ],
+      "id": "06c5cd98-695e-4e70-8058-42dc611dba80",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "MDYBwF4kvtmMTtgc",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1LGumNffS4uVrwRUEkMdqTYDLGFP9H__APaozpXMkfLI",
+          "mode": "list",
+          "cachedResultName": "Fethiye_44_Tours",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1LGumNffS4uVrwRUEkMdqTYDLGFP9H__APaozpXMkfLI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1788495448,
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1LGumNffS4uVrwRUEkMdqTYDLGFP9H__APaozpXMkfLI/edit#gid=1788495448"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        -600,
+        220
+      ],
+      "id": "a2a8ca27-3962-47d7-8a2e-a038a3531e5d",
+      "name": "Product info",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Pn6WnlCeSudTTC2F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "n8n AI wbchat",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "memory",
+              "fieldValue": "={{ $fromAI(\"memory\",\"store new memory based on the user's input and be as specific as you can\") }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $fromAI(\"customer_email\",\"if the user responds with an email address you can save it here\") }}"
+            },
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $fromAI(\"customer_name\",\"if the user responds with a name you can save it here\") }}"
+            },
+            {
+              "fieldId": "sessionID",
+              "fieldValue": "={{ $('When chat message received').item.json.sessionId }}\n"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        340
+      ],
+      "id": "afb92260-5f54-43ad-9619-c8a5a178c901",
+      "name": "Store_Memory",
+      "credentials": {
+        "supabaseApi": {
+          "id": "ILaY1d7r6nRKjD1H",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "n8n AI wbchat",
+        "returnAll": true,
+        "filterType": "none"
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        260
+      ],
+      "id": "24edc572-9838-4425-ba5f-6efa50b2762c",
+      "name": "Get_Memory",
+      "credentials": {
+        "supabaseApi": {
+          "id": "ILaY1d7r6nRKjD1H",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        0
+      ],
+      "id": "90ae3972-d0ee-4cca-81fc-e3cd9fb8313d",
+      "name": "Respond to Webhook",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a620d39f-d6b7-4ca3-9dbd-bff3d961f0eb",
+              "leftValue": "={{ $json.chatInput }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        100
+      ],
+      "id": "500fa289-4ac8-4a9d-bd60-7c8b975ee4d6",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n\"output\": \"Please type your name and email address first, to\nstart the chat.\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -1060,
+        200
+      ],
+      "id": "157fa7e4-a18d-4853-a8a6-939cfe67c5a1",
+      "name": "Respond to Webhook1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "tableId": "bookings",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $fromAI('customer_name', \"Get the user's name\") }}"
+            },
+            {
+              "fieldId": "sessionId",
+              "fieldValue": "=\"sessionId\": \"={{ $('When chat message received').item.json.sessionId }}\""
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $fromAI('customer_email', \"Get the user's email\") }}"
+            },
+            {
+              "fieldId": "tour_name",
+              "fieldValue": "={{ $fromAI('tour_name', \"Which tour to book?\") }}"
+            },
+            {
+              "fieldId": "date",
+              "fieldValue": "={{ $fromAI('tour_date', \"Date of tour\") }}"
+            },
+            {
+              "fieldId": "people_count",
+              "fieldValue": "={{ $fromAI('people_count', 'How many people are booking?') }}"
+            },
+            {
+              "fieldId": "start_time",
+              "fieldValue": "={{ $fromAI('start_time', 'When does the tour start?') }}"
+            },
+            {
+              "fieldId": "meeting_point",
+              "fieldValue": "={{ $fromAI('meeting_point', 'Where should they meet?') }}"
+            },
+            {
+              "fieldId": "hotel_name",
+              "fieldValue": "={{ $fromAI('hotel_name', \"What is the user's hotel name?\") }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $fromAI('customer_phone', \"Get the user's phone number\") }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        240
+      ],
+      "id": "6d285c77-87c7-4fa1-bfec-1ecf56962202",
+      "name": "Create_Booking",
+      "credentials": {
+        "supabaseApi": {
+          "id": "ILaY1d7r6nRKjD1H",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1291038782",
+        "text": "={{ $fromAI('notification_message', 'Create a travel booking notification message including customer name, email, phone number, tour name, date, time, number of participants, hotel name (if provided), and any special requests.') }}\n",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        220
+      ],
+      "id": "a06c6cf0-c255-4816-874b-ae2feac6c0b8",
+      "name": "Send_Telegram_Notification",
+      "webhookId": "558e0919-aac0-4cc4-877d-27c43e3742e0",
+      "credentials": {
+        "telegramApi": {
+          "id": "5VspppnXaFaid9tF",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product info": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store_Memory": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get_Memory": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create_Booking": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send_Telegram_Notification": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b28ba549-9024-4eeb-92ef-55a997846899",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5bc47a02d3d0b4995ab80b8180d7e131b430b947f69cfc30879c32ec7e9cfafd"
+  },
+  "id": "KPukMS2pCuoiJTPH",
+  "tags": []
+}

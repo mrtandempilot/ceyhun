@@ -1,0 +1,355 @@
+{
+  "name": "Skywalkers Tours - Telegram Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ],
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "webhookId": "skywalkers-bot-webhook",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "You are the official booking assistant for Skywalkers Tours in Fethiye, Turkey. 🪂\n\n📅 Today's Date: {{ $now.format('YYYY-MM-DD') }}\n\n🎯 YOUR MISSION:\nHelp customers discover and book amazing tours in Fethiye. Be enthusiastic, helpful, and professional!\n\n🌟 AVAILABLE TOURS:\nALWAYS use the Get_Tours tool when:\n- Customer greets you or starts conversation\n- Customer asks about tours, activities, or prices\n- Customer asks \"what do you offer?\"\n- ANY question about what's available\n\nThe tool returns:\n- Tour names (English & Turkish)\n- Prices (some in USD, some in TRY)\n- Durations and descriptions\n- What's included\n- Pickup availability\n\n💬 LANGUAGE:\n- Detect customer's language (Turkish or English)\n- Respond in their language naturally\n- Never mention you're an AI, tools, or databases\n\n� CONVERSATION FLOW:\n1. When customer says hi/hello → Use Get_Tours immediately, then greet warmly and show 2-3 popular tours\n2. When customer asks about specific tour → Use Get_Tours and give detailed info\n3. When customer asks about all tours → Use Get_Tours and list them categorized\n4. When customer seems ready → Start booking process\n\n📝 BOOKING PROCESS:\n\nCollect ALL these details:\n1. ✅ Full name\n2. ✅ Email address\n3. ✅ Phone number (with country code like +90)\n4. ✅ Tour name\n5. ✅ Preferred date (YYYY-MM-DD format)\n6. ✅ Tour time (if applicable)\n7. ✅ Number of adults\n8. ✅ Number of children (if any)\n9. ✅ Hotel name (for pickup) OR confirm office meetup\n\nOnce you have ALL information:\n1. Use Create_Booking tool with complete details\n2. IMMEDIATELY use Send_Notification tool to notify team\n3. Confirm to customer:\n\n\"✅ Booking Confirmed!\n\n📋 Your Details:\n🎫 Tour: [tour name]\n📅 Date: [date]\n⏰ Time: [time]\n👥 Guests: [X adults + Y children]\n🏨 Pickup: [hotel name] / 📍 Meeting Point: [location]\n\n💰 Total: [price]\n\n📞 Contact: +90 545 616 48 40\n📧 Email: info@skywalkers.com\n\nWe'll pick you up 30 minutes before!\nSee you soon! 🌟\"\n\n🚨 CRITICAL RULES:\n- ALWAYS call Get_Tours before answering about tours\n- Never guess prices or tour details\n- Create booking FIRST, notification SECOND\n- Never skip the notification\n- Be specific about everything\n- Show genuine excitement!\n\n🎨 TONE:\n- Friendly like a local friend\n- Professional but warm\n- Use emojis naturally\n- Build excitement!\n\nLet's create amazing memories! 🌊🏔️🪂"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        460,
+        300
+      ],
+      "id": "ai-agent",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.0-flash-001",
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 1000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        680,
+        460
+      ],
+      "id": "gemini-model",
+      "name": "Gemini 2.0 Flash",
+      "credentials": {
+        "openRouterApi": {
+          "id": "5vtbLyA68bKwKcxC",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        680,
+        540
+      ],
+      "id": "conversation-memory",
+      "name": "Conversation Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        300
+      ],
+      "id": "send-reply",
+      "name": "Send Reply",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "Get_Tours",
+        "description": "Fetches all available tours from Supabase database. Returns tour names in English and Turkish, descriptions, prices (USD or TRY), durations, what's included, and pickup information. Use this whenever customer asks about tours, prices, activities, or what's available.",
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "specifyInputSchema": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {},\n  \"required\": []\n}",
+        "method": "GET",
+        "url": "https://wpprlxuqvrinqefybatt.supabase.co/rest/v1/tours",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "is_active",
+              "value": "eq.true"
+            },
+            {
+              "name": "select",
+              "value": "name,name_tr,short_description,short_description_tr,price_adult,price_child,currency,duration,start_times,meeting_point,pickup_available,included,not_included,category"
+            },
+            {
+              "name": "order",
+              "value": "name.asc"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $credentials.serviceRole }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $credentials.serviceRole }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        620
+      ],
+      "id": "get-tours-tool",
+      "name": "Get_Tours",
+      "credentials": {
+        "supabaseApi": {
+          "id": "imxxVkQE1ZlUBN8k",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "bookings",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "customer_name",
+              "fieldValue": "={{ $fromAI('customer_name', 'Full name of the customer') }}"
+            },
+            {
+              "fieldId": "customer_email",
+              "fieldValue": "={{ $fromAI('customer_email', 'Customer email address') }}"
+            },
+            {
+              "fieldId": "customer_phone",
+              "fieldValue": "={{ $fromAI('customer_phone', 'Customer phone with country code like +90') }}"
+            },
+            {
+              "fieldId": "tour_name",
+              "fieldValue": "={{ $fromAI('tour_name', 'Exact tour name from database') }}"
+            },
+            {
+              "fieldId": "booking_date",
+              "fieldValue": "={{ $fromAI('booking_date', 'Tour date in YYYY-MM-DD format') }}"
+            },
+            {
+              "fieldId": "tour_start_time",
+              "fieldValue": "={{ $fromAI('tour_start_time', 'Tour start time like 08:30 or 11:00') }}"
+            },
+            {
+              "fieldId": "adults",
+              "fieldValue": "={{ $fromAI('adults', 'Number of adults as integer') || 1 }}"
+            },
+            {
+              "fieldId": "children",
+              "fieldValue": "={{ $fromAI('children', 'Number of children as integer') || 0 }}"
+            },
+            {
+              "fieldId": "hotel_name",
+              "fieldValue": "={{ $fromAI('hotel_name', 'Hotel name for pickup, or empty if meeting at office') }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "telegram"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        680,
+        700
+      ],
+      "id": "create-booking-tool",
+      "name": "Create_Booking",
+      "credentials": {
+        "supabaseApi": {
+          "id": "imxxVkQE1ZlUBN8k",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1291038782",
+        "text": "={{ $fromAI('notification_message', '🔔 NEW BOOKING ALERT!\\n\\nCreate a formatted notification with:\\n- Customer name, email, phone\\n- Tour name and date\\n- Time and number of people\\n- Hotel name for pickup\\nUse emojis to make it clear and organized') }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1,
+      "position": [
+        680,
+        780
+      ],
+      "id": "notify-team-tool",
+      "name": "Send_Notification",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 2.0 Flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get_Tours": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create_Booking": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send_Notification": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "new-simple-version",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    {
+      "name": "Telegram",
+      "id": "telegram-tag"
+    },
+    {
+      "name": "Chatbot",
+      "id": "chatbot-tag"
+    }
+  ]
+}

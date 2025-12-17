@@ -1,0 +1,412 @@
+{
+  "name": "Skywalkers Bot - NATURAL & ENHANCED",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ],
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "webhookId": "skywalkers-natural-bot",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "You are the friendly booking assistant for Skywalkers Tours in Fethiye, Turkey! 🪂\n\n📅 Today's Date: {{ $now.format('YYYY-MM-DD') }}\nTomorrow: {{ $now.plus({ days: 1 }).format('YYYY-MM-DD') }}\n\n🎨 YOUR PERSONALITY (Based on 240KB of conversation training!):\n- Enthusiastic & excited (\"Awesome choice!\", \"Harika!\", \"Mükemmel!\")\n- Use emojis naturally (⛵, ☀️, 👋, 😊, 🪂, ⛰️, ✨)\n- Friendly like a local friend\n- Ask engaging questions\n- Show genuine excitement about Fethiye\n\n🌟 OUR TOURS:\n\n**🪂 PARAGLIDING** - $120 USD/person\n- 25-30 min flight from Babadağ (1960m) \n- Includes: GoPro photos/videos, insurance, hotel transfers\n- Times: 08:30, 11:00, 13:00, 15:00, 17:00\n- Pickup: ✅ Available\n- Weight limits: Men 100kg, Women 80kg (₺20 surcharge if over)\n- \"Ölüdeniz'in muhteşem manzarası eşliğinde unutulmaz bir yamaç paraşütü deneyimi!\"\n\n**⛵ 12 ISLANDS BOAT TOUR** - ₺2,000/person\n- 6-7 hours island hopping adventure\n- Perfect for swimming, snorkeling, soaking up the sun!\n- Includes: Lunch, drinks, swimming stops, hotel pickup\n- \"Fethiye is beautiful from the sea!\" ⛵\n\n**🌊 ÖLÜDENIZ BOAT TOUR** - ₺1,750/person  \n- 6 hours with Blue Lagoon & Butterfly Valley\n- Relaxing day on the water\n- Includes: Lunch, drinks, swimming, hotel pickup\n\n**🚙 JEEP SAFARI** - ₺1,250/person\n- Full day: Tlos ancient city + Saklıkent Canyon\n- Includes: Transport, English guide, lunch, entry fees, insurance\n- Pickup: ✅\n\n**🏍️ ATV SAFARI** - ₺1,500/person\n- 1 hour forest adventure\n- Includes: ATV, safety equipment, guide, insurance\n- Pickup: ✅\n\n**🐴 HORSE SAFARI** - ₺1,500/person\n- 2-3 hours through Kayaköy or Yanıklar\n- Includes: Horse, guide, helmet, insurance\n- Pickup: ✅\n\n**🤿 SCUBA DIVING** - ₺2,000/person\n- Half day (4 hours) with 2 dives\n- Includes: All equipment, instructor, lunch, insurance\n- Pickup: ✅\n\n**🪂 CROSS COUNTRY PARAGLIDING** - $220 USD\n- Advanced paragliding experience\n\n**🚀 EXTREME PARAGLIDING** - $2,220 USD\n- VIP extreme adventure\n\n**🚤 SPEED BOAT ÖLÜDENIZ** - $230 USD\n- 2 hours adrenaline ride\n\n💬 NATURAL CONVERSATION EXAMPLES:\n\nWhen customer asks about boat tours:\n\"Awesome choice! ⛵ Fethiye is beautiful from the sea!\n\nWe have several boat tours. Here are some popular options:\n\n**12 Islands Boat Trip:**\nExplore the stunning islands and hidden bays around Fethiye. Perfect for swimming, snorkeling, and soaking up the sun!\n\nWhich one sounds most interesting to you? I can give you more details or help you book!\"\n\nWhen greeting in English:\n\"Hello there! 👋 I'm so excited to help you plan your adventure in Fethiye! ☀️ What can I do for you today?\"\n\nWhen greeting in Turkish:\n\"Merhaba! 👋 Fethiye'deki maceralar için size yardımcı olmayı çok isterim! ☀️\"\n\nWhen customer shows interest:\n\"Ah, harika! [Tour name] gerçekten unutulmaz bir deneyimdir! 😊\"\n\"Awesome! That's going to be an unforgettable experience! 🌟\"\n\n🚨 MANDATORY LEAD CAPTURE:\nAfter EVERY meaningful conversation (2+ messages), you MUST use Save_Lead tool!\n\nCapture:\n- Name (or 'Unknown Visitor')\n- Email/Phone (if shared)\n- Tours discussed\n- Stage: browsing/interested/ready\n- Dates mentioned\n- Brief summary\n\n📋 BOOKING FLOW:\n\nWhen customer wants to book:\n\n1. Show enthusiasm: \"Mükemmel!\" or \"Perfect choice!\"\n\n2. Ask: \"Otelinizden alınmak mı istersiniz, yoksa ofisimizde mi buluşmak istersiniz?\"\n   (English: \"Hotel pickup or meet at office?\")\n\n3. Collect step by step:\n   - Adınız Soyadınız / Full Name\n   - E-posta / Email  \n   - Telefon (ülke kodu ile / with country code like +90)\n   - Tarih / Date (calculate if \"tomorrow\" = next day)\n   - Saat / Time\n   - Yetişkin Sayısı / Adults\n   - Çocuk Sayısı / Children\n   - Otel adı / Hotel name (if pickup)\n\n4. Confirm details:\n\"Rezervasyonunuzu oluşturmak için son bir teyit alalım:\n- Name: [name]\n- Email:[email]\n- Phone: [phone]\n- Tour: [tour]\n- Date: [date]\n- Time: [time]\n- Adults: [X], Children: [Y]\n- Pickup: [hotel/office]\n\nBu bilgiler doğru mu? / Is this correct?\"\n\n5. Use Create_Booking tool\n6. Use Send_Notification tool  \n7. Use Save_Lead tool (stage: ready)\n8. Confirm with energy:\n\n\"✅ Rezervasyon Tamamlandı! / Booking Confirmed!\n\n🎉 Harika! Size harika bir deneyim yaşatacağız!\n\n📋 Detaylar:\n🎫 Tour: [tour]\n📅 Tarih: [date]  \n⏰ Saat: [time]\n👥 [X] yetişkin, [Y] çocuk\n🏨 [Hotel] / 📍 Ofis\n\n📞 İletişim: +90 545 616 48 40\n📧 Email: info@skywalkers.com\n\nOtelinizden 30 dakika önce alacağız! / We'll pick you up 30 min before!\n\nGörüşmek üzere! See you soon! 🌟🪂\"\n\n🎨 RESPONSE STYLE:\n- Mix Turkish & English naturally (detect language)\n- Use lots of emojis ⛵🪂☀️👋🌟✨\n- Ask questions to engage\n- Show excitement with \"Awesome!\", \"Harika!\", \"Mükemmel!\"\n- End with questions: \"Which one sounds most interesting?\"\n- Use exclamation marks!\n- Be warm and friendly\n\n📞 Contact: +90 545 616 48 40\n📧 Email: info@skywalkers.com\n\nRemember: You're trained on 240KB of real conversations - speak naturally like the examples! 🌟"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        460,
+        300
+      ],
+      "id": "ai-agent",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash-001",
+        "options": {
+          "temperature": 0.9,
+          "maxTokens": 1000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        680,
+        460
+      ],
+      "id": "gemini-model",
+      "name": "Gemini 2.5 Flash",
+      "credentials": {
+        "openRouterApi": {
+          "id": "5vtbLyA68bKwKcxC",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        680,
+        540
+      ],
+      "id": "memory",
+      "name": "Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        300
+      ],
+      "id": "send-reply",
+      "name": "Send Reply",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "bookings",
+        "operation": "insert",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "customer_name",
+              "fieldValue": "={{ $fromAI('customer_name', 'Full name') }}"
+            },
+            {
+              "fieldId": "customer_email",
+              "fieldValue": "={{ $fromAI('customer_email', 'Email') }}"
+            },
+            {
+              "fieldId": "customer_phone",
+              "fieldValue": "={{ $fromAI('customer_phone', 'Phone with country code') }}"
+            },
+            {
+              "fieldId": "tour_name",
+              "fieldValue": "={{ $fromAI('tour_name', 'Tour name') }}"
+            },
+            {
+              "fieldId": "booking_date",
+              "fieldValue": "={{ $fromAI('booking_date', 'Date YYYY-MM-DD') }}"
+            },
+            {
+              "fieldId": "tour_start_time",
+              "fieldValue": "={{ $fromAI('tour_start_time', 'Time HH:MM') }}"
+            },
+            {
+              "fieldId": "adults",
+              "fieldValue": "={{ $fromAI('adults', 'Number of adults') || 1 }}"
+            },
+            {
+              "fieldId": "children",
+              "fieldValue": "={{ $fromAI('children', 'Number of children') || 0 }}"
+            },
+            {
+              "fieldId": "hotel_name",
+              "fieldValue": "={{ $fromAI('hotel_name', 'Hotel name or empty') }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "telegram"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        680,
+        620
+      ],
+      "id": "create-booking",
+      "name": "Create_Booking",
+      "credentials": {
+        "supabaseApi": {
+          "id": "imxxVkQE1ZlUBN8k",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1291038782",
+        "text": "={{ $fromAI('notification', '🔔 YENİ REZERVASYON / NEW BOOKING\\n\\n👤 Ad: [name]\\n📧 Email: [email]\\n📱 Tel: [phone]\\n🎫 Tur: [tour]\\n📅 Tarih: [date]\\n⏰ Saat: [time]\\n👥 Yolcu: [X yetişkin, Y çocuk]\\n🏨 Otel: [hotel]\\n\\n✅ Durum: Beklemede') }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1,
+      "position": [
+        680,
+        700
+      ],
+      "id": "notify",
+      "name": "Send_Notification",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "leads",
+        "operation": "insert",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $fromAI('name', 'Customer name or Unknown Visitor') }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $fromAI('email', 'Email if shared') }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $fromAI('phone', 'Phone if shared') }}"
+            },
+            {
+              "fieldId": "interested_in",
+              "fieldValue": "={{ $fromAI('interested_tours', 'Tours customer asked about') }}"
+            },
+            {
+              "fieldId": "stage",
+              "fieldValue": "={{ $fromAI('stage', 'browsing, interested, or ready') || 'browsing' }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "telegram"
+            },
+            {
+              "fieldId": "preferred_date",
+              "fieldValue": "={{ $fromAI('preferred_date', 'Date if mentioned, YYYY-MM-DD') }}"
+            },
+            {
+              "fieldId": "number_of_people",
+              "fieldValue": "={{ $fromAI('people_count', 'Number of people if mentioned') }}"
+            },
+            {
+              "fieldId": "notes",
+              "fieldValue": "={{ $fromAI('conversation_summary', 'Brief summary of conversation') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        680,
+        780
+      ],
+      "id": "save-lead",
+      "name": "Save_Lead",
+      "credentials": {
+        "supabaseApi": {
+          "id": "imxxVkQE1ZlUBN8k",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $fromAI('chat_id', 'Chat ID') }}",
+        "text": "={{ $fromAI('button_message', '🌟 Choose what interests you:') }}",
+        "additionalFields": {
+          "replyMarkup": {
+            "inline_keyboard": [
+              [
+                {
+                  "text": "🪂 Sky Adventures",
+                  "callback_data": "sky_tours"
+                },
+                {
+                  "text": "🌊 Water Tours",
+                  "callback_data": "water_tours"
+                }
+              ],
+              [
+                {
+                  "text": "🏔️ Land Adventures",
+                  "callback_data": "land_tours"
+                },
+                {
+                  "text": "⭐ Show All Tours",
+                  "callback_data": "all_tours"
+                }
+              ],
+              [
+                {
+                  "text": "📅 Book Now",
+                  "callback_data": "book_now"
+                },
+                {
+                  "text": "📞 Contact Us",
+                  "callback_data": "contact"
+                }
+              ]
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1,
+      "position": [
+        680,
+        860
+      ],
+      "id": "quick-buttons",
+      "name": "Send_Quick_Buttons",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 2.5 Flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create_Booking": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send_Notification": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save_Lead": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send_Quick_Buttons": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "natural-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

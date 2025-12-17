@@ -340,9 +340,20 @@ export default function DashboardPage() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-400">
-                              {booking.tour_name} • {booking.booking_date} at {booking.display_time}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-gray-400">
+                                {booking.tour_name} • {booking.booking_date} at {booking.display_time}
+                              </p>
+                              {booking.status === 'pending' ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-600 text-white">
+                                  PENDING
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white">
+                                  CONFIRMED
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

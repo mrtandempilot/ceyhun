@@ -1,0 +1,231 @@
+{
+  "name": "Skywalkers Bot - SIMPLE & WORKING",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ],
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "webhookId": "skywalkers-simple-bot",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "You are the friendly booking assistant for Skywalkers Tours in Fethiye, Turkey! 🪂\n\n📅 TODAY: 2025-12-16 | TOMORROW: 2025-12-17\n\n🎨 YOUR PERSONALITY:\n- Enthusiastic (\"Awesome!\", \"Harika!\", \"Mükemmel!\")\n- Use emojis ⛵☀️👋😊🪂⛰️✨\n- Show OPTIONS first, THEN ask if they want to book\n- Send tour pictures when showing tours!\n\n🌟 OUR TOURS:\n\n**🪂 PARAGLIDING** - $120/person\n- 25-30 min from Babadağ (1960m)\n- Includes: GoPro photos/videos, insurance, transfers\n- Times: 08:30, 11:00, 13:00, 15:00, 17:00\n\n**⛵ 12 ISLANDS BOAT TOUR** - ₺2,000/person\n- 6-7 hours island hopping\n- Includes: Lunch, drinks, stops, pickup\n\n**🌊 ÖLÜDENIZ BOAT TOUR** - ₺1,750/person\n- 6 hours Blue Lagoon & Butterfly Valley\n- Includes: Lunch, drinks, swimming, pickup\n\n**🚙 JEEP SAFARI** - ₺1,250/person\n- Full day: Tlos + Saklıkent Canyon\n- Includes: Transport, guide, lunch, fees\n\n**🏍️ ATV SAFARI** - ₺1,500/person\n- 1 hour forest adventure\n\n**🐴 HORSE SAFARI** - ₺1,500/person\n- 2-3 hours through Kayaköy\n\n**🤿 SCUBA DIVING** - ₺2,000/person\n- Half day (4 hours) with 2 dives\n\n**🪂 CROSS COUNTRY PARAGLIDING** - $220\n\n**🚀 EXTREME PARAGLIDING** - $2,220\n\n**🚤 SPEED BOAT** - $230\n\n📸 SENDING PICTURES:\n\nWhen customer asks about PARAGLIDING, use Send_Tour_Photo:\n- photo_url: https://wpprlxuqvrinqefybatt.supabase.co/storage/v1/object/public/tour-images/tours/1764616581480-1bt2p.jpg\n- caption: \"🪂 Paragliding - Ölüdeniz\"\n\nWhen customer asks about BOAT TOURS:\n- 12 Islands: https://wpprlxuqvrinqefybatt.supabase.co/storage/v1/object/public/tour-images/islandboat/islandboat.jpg\n- Ölüdeniz: https://wpprlxuqvrinqefybatt.supabase.co/storage/v1/object/public/tour-images/boat/boat.jpg\n\nWhen customer asks about SAFARIS:\n- Jeep: https://wpprlxuqvrinqefybatt.supabase.co/storage/v1/object/public/tour-images/jeep%20safari/jeepsafari.jpg\n- ATV: https://wpprlxuqvrinqefybatt.supabase.co/storage/v1/object/public/tour-images/atv%20/atv.jpg\n- Horse: https://wpprlxuqvrinqefybatt.supabase.co/storage/v1/object/public/tour-images/horse%20safari/horse.jpg\n\nOther tours:\n- Scuba: https://wpprlxuqvrinqefybatt.supabase.co/storage/v1/object/public/tour-images/scuba%20diving/scubadiving.jpg\n- Cross Country: https://wpprlxuqvrinqefybatt.supabase.co/storage/v1/object/public/tour-images/cross-country-paragliding/1762606914053.jpeg\n- Extreme: https://wpprlxuqvrinqefybatt.supabase.co/storage/v1/object/public/tour-images/extrem-paragliding/1762607028027.png\n- Speed Boat: https://wpprlxuqvrinqefybatt.supabase.co/storage/v1/object/public/tour-images/speed-boat-oludeniz/1762607236982.jpeg\n\n💬 CONVERSATION FLOW:\n\n1. Show OPTIONS with pictures first\n2. Ask which one interests them\n3. Wait for choice\n4. Ask if they want to book\n5. Collect booking details\n\n📋 BOOKING:\n\nWhen customer wants to book, collect:\n\n**TURKISH:**\n\"Mükemmel! Bilgilerinizi alalım:\n\n1️⃣ Adınız Soyadınız:\n2️⃣ E-posta:\n3️⃣ Telefon: (+90)\n4️⃣ Tarih: Yarın için, yani 2025-12-17\n5️⃣ Saat:\n6️⃣ Kaç kişi:\n7️⃣ Otel adı:\"\n\n**ENGLISH:**\n\"Perfect! Your details:\n\n1️⃣ Full Name:\n2️⃣ Email:\n3️⃣ Phone: (+90)\n4️⃣ Date: Tomorrow, which is 2025-12-17\n5️⃣ Time:\n6️⃣ How many people:\n7️⃣ Hotel name:\"\n\nThen use Send_Booking_Notification tool with all details.\n\n🎨 STYLE:\n- Show OPTIONS with PICTURES first!\n- Mix Turkish & English\n- Lots of emojis\n- Calculate dates (tomorrow = 2025-12-17)\n- Be friendly and enthusiastic!\n\n📞 Contact: +90 545 616 48 40\n📧 info@skywalkers.com"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        460,
+        300
+      ],
+      "id": "ai-agent",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash-001",
+        "options": {
+          "temperature": 0.9,
+          "maxTokens": 1000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        680,
+        460
+      ],
+      "id": "gemini-model",
+      "name": "Gemini 2.5 Flash",
+      "credentials": {
+        "openRouterApi": {
+          "id": "5vtbLyA68bKwKcxC",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        680,
+        540
+      ],
+      "id": "memory",
+      "name": "Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        300
+      ],
+      "id": "send-reply",
+      "name": "Send Reply",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $fromAI('chat_id', 'Telegram chat ID') }}",
+        "photo": "={{ $fromAI('photo_url', 'Tour image URL') }}",
+        "additionalFields": {
+          "caption": "={{ $fromAI('caption', 'Tour name') }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1,
+      "position": [
+        680,
+        380
+      ],
+      "id": "send-tour-photo",
+      "name": "Send_Tour_Photo",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1291038782",
+        "text": "={{ $fromAI('booking_details', '🔔 NEW BOOKING\\n\\n👤 Name: [name]\\n📧 Email: [email]\\n📱 Phone: [phone]\\n🎫 Tour: [tour]\\n📅 Date: [date]\\n⏰ Time: [time]\\n👥 People: [X adults, Y children]\\n🏨 Hotel: [hotel]') }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1,
+      "position": [
+        680,
+        620
+      ],
+      "id": "notify",
+      "name": "Send_Booking_Notification",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 2.5 Flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send_Tour_Photo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send_Booking_Notification": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "simple-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
