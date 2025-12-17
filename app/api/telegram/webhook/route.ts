@@ -97,7 +97,8 @@ export async function POST(request: NextRequest) {
         .eq('telegram_chat_id', chatId.toString())
         .single();
 
-      if (findError && !findError.message.includes('No rows')) {
+      if (findError && findError.code !== 'PGRST116') { // PGRST116 means no rows found
+        console.error('❌ Error looking up conversation:', findError);
         throw findError;
       }
 
