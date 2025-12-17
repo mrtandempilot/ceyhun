@@ -169,9 +169,34 @@ export async function POST(request: NextRequest) {
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversationId);
 
-    // TODO: In a real implementation, you would send message to Telegram API
-    // For now, just return success
-    console.log('📤 Telegram message sent to chat:', conversation.telegram_chat_id, 'Message:', message);
+    // Send reply to Telegram API
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (botToken) {
+      try {
+        const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        const telegramResponse = await fetch(telegramUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chat_id: conversation.telegram_chat_id,
+            text: message,
+            parse_mode: 'Markdown'
+          }),
+        });
+
+        if (telegramResponse.ok) {
+          console.log('✅ Admin reply sent to Telegram successfully');
+        } else {
+          console.error('❌ Failed to send admin reply to Telegram:', await telegramResponse.text());
+        }
+      } catch (apiError) {
+        console.error('❌ Error sending admin reply to Telegram API:', apiError);
+      }
+    } else {
+      console.log('⚠️ TELEGRAM_BOT_TOKEN not set, admin reply only saved to database');
+    }
 
     return NextResponse.json({
       success: true,
