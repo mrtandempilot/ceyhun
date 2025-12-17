@@ -705,13 +705,21 @@ export async function getBlogStats() {
 // UPCOMING BOOKINGS
 // ============================================
 
-export async function getUpcomingBookings(limit: number = 5) {
+// ============================================
+// UPCOMING BOOKINGS
+// ============================================
+
+export async function getUpcomingBookings(limit: number = 10) { // Increased limit to see more
   try {
     const now = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7); // Check last 7 days
 
     console.log('🔍 Upcoming Bookings: Current date filter:', now.toISOString().split('T')[0]);
+    console.log('🔍 Also checking bookings from last 7 days for Instagram etc.');
 
-    const { data: bookings, error } = await supabase
+    // First, get upcoming bookings (future dates with proper status)
+    const { data: futureBookings, error: futureError } = await supabase
       .from('bookings')
       .select(`
         id,
@@ -723,20 +731,61 @@ export async function getUpcomingBookings(limit: number = 5) {
         tour_start_time,
         status,
         total_amount,
-        created_at
+        created_at,
+        channel,
+        notes
       `)
-      .eq('status', 'confirmed')
+      .in('status', ['pending', 'confirmed']) // Show both pending and confirmed bookings
       .gte('booking_date', now.toISOString().split('T')[0]) // Future dates
       .order('booking_date', { ascending: true })
-      .order('tour_start_time', { ascending: true })
-      .limit(limit);
+      .order('tour_start_time', { ascending: true });
 
-    if (error) throw error;
+    if (futureError) throw futureError;
 
-    console.log('🔍 Upcoming Bookings: Raw data from database:', bookings);
+    // Also get recent bookings that might be Instagram or other sources (last 7 days)
+    const { data: recentBookings, error: recentError } = await supabase
+      .from('bookings')
+      .select(`
+        id,
+        customer_name,
+        customer_phone,
+        customer_email,
+        tour_name,
+        booking_date,
+        tour_start_time,
+        status,
+        total_amount,
+        created_at,
+        channel,
+        notes
+      `)
+      .gte('created_at', sevenDaysAgo.toISOString()) // All bookings from last 7 days
+      .order('created_at', { ascending: false });
+
+    if (recentError) throw recentError;
+
+    // Combine and deduplicate bookings
+    const bookingMap = new Map();
+    (futureBookings || []).forEach(booking => bookingMap.set(booking.id, booking));
+    (recentBookings || []).forEach(booking => bookingMap.set(booking.id, booking));
+
+    const allBookings = Array.from(bookingMap.values())
+      .sort((a, b) => {
+        // Sort by booking_date first, then by created_at (recent first)
+        const dateA = new Date(a.booking_date).getTime();
+        const dateB = new Date(b.booking_date).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      })
+      .slice(0, limit); // Limit after sorting
+
+    console.log('🔍 Upcoming Bookings: Future bookings count:', futureBookings?.length || 0);
+    console.log('🔍 Recent bookings count (last 7 days):', recentBookings?.length || 0);
+    console.log('🔍 Combined bookings count:', allBookings.length);
+    console.log('🔍 Sample booking channels:', allBookings.slice(0, 3).map(b => ({ id: b.id, status: b.status, channel: b.channel })));
 
     // Format the data for display
-    const formattedBookings = bookings?.map((booking: any) => ({
+    const formattedBookings = allBookings.map((booking: any) => ({
       id: booking.id,
       customer_name: booking.customer_name,
       tour_name: booking.tour_name,
@@ -749,8 +798,9 @@ export async function getUpcomingBookings(limit: number = 5) {
       amount: booking.total_amount,
       phone: booking.customer_phone,
       email: booking.customer_email,
+      status: booking.status, // Include status for display
       display_time: booking.tour_start_time ? booking.tour_start_time.slice(0, 5) : 'TBD' // Remove seconds
-    })) || [];
+    }));
 
     console.log('🔍 Upcoming Bookings: Formatted result:', formattedBookings);
 
