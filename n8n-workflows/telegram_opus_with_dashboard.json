@@ -525,7 +525,7 @@
       ]
     },
     "Manual Mode Check": {
-      "main": [
+      "true": [
         [
           {
             "node": "Stop - Manual Mode Active",
@@ -534,7 +534,7 @@
           }
         ]
       ],
-      "false": [
+      "main": [
         [
           {
             "node": "Save User Message",
