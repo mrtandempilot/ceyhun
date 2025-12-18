@@ -406,9 +406,21 @@ export default function InstagramChatPage() {
                           <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                         )}
                       </h2>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                        <span>@{selectedConversation.username || 'instagram_user'}</span>
-                        <span>Instagram ID: ...{selectedConversation.instagram_id.slice(-8)}</span>
+                      <div className="flex flex-col gap-1 text-sm text-gray-600 mt-1">
+                        <div className="flex items-center gap-4">
+                          <span>@{selectedConversation.username || 'instagram_user'}</span>
+                          <span>Instagram ID: ...{selectedConversation.instagram_id.slice(-8)}</span>
+                        </div>
+                        {(selectedConversation as any).customer_email && (
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <span>📧 {(selectedConversation as any).customer_email}</span>
+                          </div>
+                        )}
+                        {(selectedConversation as any).customer_phone && (
+                          <div className="flex items-center gap-2 text-green-600">
+                            <span>📱 {(selectedConversation as any).customer_phone}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
