@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, RefreshCw, Search, Send, Instagram } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface InstagramMessage {
   id: string;
@@ -44,6 +45,13 @@ export default function InstagramChatPage() {
   const [replyMessage, setReplyMessage] = useState('');
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [userScrolledUp, setUserScrolledUp] = useState(false);
+
+  // Auto-scroll to bottom function
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+  };
 
   const fetchConversations = async () => {
     setLoading(true);
@@ -68,6 +76,8 @@ export default function InstagramChatPage() {
       if (!response.ok) throw new Error('Failed to fetch messages');
       const data = await response.json();
       setMessages(data);
+      // Auto-scroll to bottom when loading messages
+      setTimeout(() => scrollToBottom(false), 100);
     } catch (err) {
       console.error('Error fetching messages:', err);
     } finally {
@@ -81,6 +91,19 @@ export default function InstagramChatPage() {
     const messageToSend = replyMessage.trim();
     setReplyMessage('');
     setSendingMessage(true);
+
+    // Optimistic UI update
+    const optimisticMessage: InstagramMessage = {
+      id: `temp-${Date.now()}`,
+      conversation_id: selectedConversationId,
+      message_id: `temp-${Date.now()}`,
+      sender: 'business',
+      content: messageToSend,
+      status: 'sending',
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMessage]);
+    scrollToBottom();
 
     try {
       const response = await fetch('/api/conversations/instagram', {
@@ -96,10 +119,12 @@ export default function InstagramChatPage() {
 
       if (!response.ok) throw new Error('Failed to send message');
 
-      await fetchMessages(selectedConversationId);
-      await fetchConversations();
+      // Remove optimistic message - real one will come via Realtime
+      setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
     } catch (err) {
       console.error('Error sending message:', err);
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
       alert('Failed to send message. Please try again.');
     } finally {
       setSendingMessage(false);
@@ -141,63 +166,81 @@ export default function InstagramChatPage() {
   useEffect(() => {
     if (selectedConversationId) {
       fetchMessages(selectedConversationId);
+      setUserScrolledUp(false);
     } else {
       setMessages([]);
     }
   }, [selectedConversationId]);
 
-  // Real-time updates using Server-Sent Events
+  // Supabase Realtime subscriptions for real-time updates
   useEffect(() => {
     if (!autoRefresh) return;
 
-    console.log('🔗 Connecting to Instagram SSE...');
+    console.log('🔗 Setting up Supabase Realtime subscriptions...');
 
-    const eventSource = new EventSource('/api/sse/instagram');
+    // Subscribe to new messages
+    const messagesChannel = supabase
+      .channel('instagram-messages-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'instagram_messages'
+        },
+        (payload) => {
+          console.log('🔔 New Instagram message received:', payload);
+          const newMessage = payload.new as InstagramMessage;
 
-    eventSource.onopen = () => {
-      console.log('🔗 Instagram SSE connection established');
-      setLastRefresh(new Date());
-    };
-
-    eventSource.onmessage = (event) => {
-      try {
-        const update = JSON.parse(event.data);
-
-        if (update.type === 'connected') {
-          console.log('🔗 Instagram SSE connected and ready');
-          return;
-        }
-
-        console.log('🔗 Instagram SSE update received:', update.type);
-
-        if (update.type === 'conversations') {
-          // Refresh conversations list
-          fetchConversations();
-        } else if (update.type === 'messages' && selectedConversationId) {
-          // Refresh current conversation if it's the updated one
-          if (update.data && update.data.some((m: any) => m.conversation_id === selectedConversationId)) {
-            fetchMessages(selectedConversationId);
+          // Update messages if it's for the current conversation
+          if (selectedConversationId && newMessage.conversation_id === selectedConversationId) {
+            setMessages(prev => {
+              // Avoid duplicates
+              if (prev.some(m => m.id === newMessage.id)) return prev;
+              const updated = [...prev, newMessage];
+              // Auto-scroll only if user hasn't scrolled up
+              setTimeout(() => {
+                if (!userScrolledUp) scrollToBottom();
+              }, 100);
+              return updated;
+            });
           }
-          // Also refresh conversations to update last message
+
+          // Refresh conversations list to update last message
           fetchConversations();
+          setLastRefresh(new Date());
         }
+      )
+      .subscribe((status) => {
+        console.log('📡 Messages subscription status:', status);
+      });
 
-        setLastRefresh(new Date());
-      } catch (error) {
-        console.error('❌ Instagram SSE message parse error:', error);
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('❌ Instagram SSE connection error:', error);
-      setAutoRefresh(false); // Disable auto-refresh on error
-    };
+    // Subscribe to conversation updates
+    const conversationsChannel = supabase
+      .channel('instagram-conversations-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'instagram_conversations'
+        },
+        (payload) => {
+          console.log('🔔 Instagram conversation updated:', payload);
+          fetchConversations();
+          setLastRefresh(new Date());
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Conversations subscription status:', status);
+      });
 
     return () => {
-      console.log('🔌 Closing Instagram SSE connection');
-      eventSource.close();
+      console.log('🔌 Cleaning up Supabase Realtime subscriptions');
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(conversationsChannel);
     };
-  }, [autoRefresh, selectedConversationId]);
+  }, [autoRefresh, selectedConversationId, userScrolledUp]);
 
   const filteredConversations = conversations.filter(conv => {
     if (!searchTerm) return true;
@@ -234,11 +277,10 @@ export default function InstagramChatPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-                autoRefresh
-                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${autoRefresh
+                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
             >
               {autoRefresh ? '🔄' : '⏸️'}
               {autoRefresh ? 'Live' : 'Paused'}
@@ -291,9 +333,8 @@ export default function InstagramChatPage() {
                   <button
                     key={conv.id}
                     onClick={() => setSelectedConversationId(conv.id)}
-                    className={`w-full text-left p-4 border-b border-gray-100 hover:bg-pink-50 transition-colors ${
-                      selectedConversationId === conv.id ? 'bg-pink-50 border-l-4 border-l-pink-500' : ''
-                    }`}
+                    className={`w-full text-left p-4 border-b border-gray-100 hover:bg-pink-50 transition-colors ${selectedConversationId === conv.id ? 'bg-pink-50 border-l-4 border-l-pink-500' : ''
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -313,11 +354,10 @@ export default function InstagramChatPage() {
                                   e.stopPropagation();
                                   toggleManualMode(conv.id, conv.instagram_id, !conv.manual_mode_active);
                                 }}
-                                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                                  conv.manual_mode_active
-                                    ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                }`}
+                                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${conv.manual_mode_active
+                                  ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                  }`}
                                 title={conv.manual_mode_active ? 'Bot susturulmuş - Manuel konuşma' : 'Bot aktif - Otomatik yanıt'}
                               >
                                 {conv.manual_mode_active ? '🤖⛔' : '🤖✅'}
@@ -372,17 +412,23 @@ export default function InstagramChatPage() {
                       </div>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    selectedConversation.status === 'active'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${selectedConversation.status === 'active'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                    }`}>
                     {selectedConversation.status}
                   </span>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                <div
+                  className="flex-1 overflow-y-auto p-4 bg-gray-50"
+                  onScroll={(e) => {
+                    const target = e.currentTarget;
+                    const isScrolledToBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 50;
+                    setUserScrolledUp(!isScrolledToBottom);
+                  }}
+                >
                   {loadingMessages ? (
                     <div className="flex justify-center p-8">
                       <RefreshCw className="w-8 h-8 animate-spin text-pink-500" />
@@ -397,26 +443,25 @@ export default function InstagramChatPage() {
                       {messages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex items-start gap-3 ${
-                            message.sender === 'business' ? 'justify-end' : 'justify-start'
-                          }`}
+                          className={`flex items-start gap-3 ${message.sender === 'business' ? 'justify-end' : 'justify-start'
+                            }`}
                         >
                           <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-sm ${
-                              message.sender === 'business'
-                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                                : 'bg-white border border-gray-200 text-gray-900'
-                            }`}
+                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-sm ${message.sender === 'business'
+                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                              : 'bg-white border border-gray-200 text-gray-900'
+                              }`}
                           >
                             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                            <p className={`text-xs mt-2 ${
-                              message.sender === 'business' ? 'text-pink-200' : 'text-gray-500'
-                            }`}>
+                            <p className={`text-xs mt-2 ${message.sender === 'business' ? 'text-pink-200' : 'text-gray-500'
+                              }`}>
                               {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         </div>
                       ))}
+                      {/* Invisible div for auto-scrolling */}
+                      <div ref={messagesEndRef} />
                     </div>
                   )}
                 </div>
