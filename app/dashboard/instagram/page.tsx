@@ -213,28 +213,9 @@ export default function InstagramChatPage() {
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0">
-                        {conv.profile_picture_url ? (
-                          <img
-                            src={conv.profile_picture_url}
-                            alt="Profile"
-                            className="w-12 h-12 rounded-full object-cover border-2 border-pink-200"
-                            onError={(e) => {
-                              // Hide image element if it fails to load
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              // Show fallback icon
-                              const parent = target.parentElement!;
-                              const fallback = document.createElement('div');
-                              fallback.className = 'w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center';
-                              fallback.innerHTML = '<span class="text-white text-lg">👤</span>';
-                              parent.appendChild(fallback);
-                            }}
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
-                            <span className="text-white text-lg">👤</span>
-                          </div>
-                        )}
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center border-2 border-pink-200">
+                          <span className="text-white text-lg">👤</span>
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
@@ -271,26 +252,9 @@ export default function InstagramChatPage() {
                 {/* Chat Header */}
                 <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {selectedConversation.profile_picture_url ? (
-                      <img
-                        src={selectedConversation.profile_picture_url}
-                        alt="Profile"
-                        className="w-14 h-14 rounded-full object-cover border-2 border-pink-300 shadow-sm"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const parent = target.parentElement!;
-                          const fallback = document.createElement('div');
-                          fallback.className = 'w-14 h-14 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center shadow-sm';
-                          fallback.innerHTML = '<span class="text-white text-xl">👤</span>';
-                          parent.appendChild(fallback);
-                        }}
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center shadow-sm">
-                        <span className="text-white text-xl">👤</span>
-                      </div>
-                    )}
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center shadow-sm border-2 border-pink-300">
+                      <span className="text-white text-xl">👤</span>
+                    </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                         <Instagram className="w-5 h-5 text-pink-500" />
