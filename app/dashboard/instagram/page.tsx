@@ -28,6 +28,8 @@ interface InstagramConversation {
     created_at: string;
   };
   messageCount: number;
+  manual_mode_active?: boolean;
+  manual_mode_expires_at?: string | null;
 }
 
 export default function InstagramChatPage() {
@@ -100,6 +102,34 @@ export default function InstagramChatPage() {
       alert('Failed to send message. Please try again.');
     } finally {
       setSendingMessage(false);
+    }
+  };
+
+  // Function to toggle manual mode for a conversation
+  const toggleManualMode = async (conversationId: string, instagramId: string, enable: boolean) => {
+    try {
+      const response = await fetch('/api/instagram/check-manual-mode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          instagram_id: instagramId,
+          action: enable ? 'enable' : 'disable'
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update manual mode');
+
+      const result = await response.json();
+      console.log('✅ Manual mode updated:', result);
+
+      // Refresh conversations to update status
+      await fetchConversations();
+
+    } catch (err) {
+      console.error('❌ Error toggling manual mode:', err);
+      alert('Failed to update conversation mode. Please try again.');
     }
   };
 
@@ -211,32 +241,51 @@ export default function InstagramChatPage() {
                       selectedConversationId === conv.id ? 'bg-pink-50 border-l-4 border-l-pink-500' : ''
                     }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center border-2 border-pink-200">
-                          <span className="text-white text-lg">👤</span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center border-2 border-pink-200">
+                            <span className="text-white text-lg">👤</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {conv.customer_name || conv.username || `User ${conv.instagram_id.slice(-6)}`}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {conv.customer_name || conv.username || `User ${conv.instagram_id.slice(-6)}`}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleManualMode(conv.id, conv.instagram_id, !conv.manual_mode_active);
+                                }}
+                                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                                  conv.manual_mode_active
+                                    ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                }`}
+                                title={conv.manual_mode_active ? 'Bot susturulmuş - Manuel konuşma' : 'Bot aktif - Otomatik yanıt'}
+                              >
+                                {conv.manual_mode_active ? '🤖⛔' : '🤖✅'}
+                                {conv.manual_mode_active ? 'Manual' : 'Auto'}
+                              </button>
+                              <span className="text-xs text-gray-500">
+                                {new Date(conv.last_message_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 truncate mt-0.5">
+                            ID: ...{conv.instagram_id.slice(-8)}
                           </p>
-                          <span className="text-xs text-gray-500">
-                            {new Date(conv.last_message_at).toLocaleDateString()}
-                          </span>
+                          <p className="text-sm text-gray-600 truncate mt-1">
+                            {conv.lastMessage?.content || 'No messages'}
+                          </p>
+                          {conv.messageCount > 0 && (
+                            <span className="inline-block mt-1 px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full">
+                              {conv.messageCount} messages
+                            </span>
+                          )}
                         </div>
-                        <p className="text-xs text-gray-500 truncate mt-0.5">
-                          ID: ...{conv.instagram_id.slice(-8)}
-                        </p>
-                        <p className="text-sm text-gray-600 truncate mt-1">
-                          {conv.lastMessage?.content || 'No messages'}
-                        </p>
-                        {conv.messageCount > 0 && (
-                          <span className="inline-block mt-1 px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full">
-                            {conv.messageCount} messages
-                          </span>
-                        )}
                       </div>
                     </div>
                   </button>

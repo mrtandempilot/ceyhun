@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // Fetch all conversations with last message and message count
     const { data, error: convError } = await supabaseAdmin
       .from('instagram_conversations')
-      .select('id, instagram_id, customer_name, username, status, last_message_at, created_at, profile_picture_url')
+      .select('id, instagram_id, customer_name, username, status, last_message_at, created_at, profile_picture_url, manual_mode_active, manual_mode_expires_at')
       .order('last_message_at', { ascending: false });
 
     if (convError) throw convError;
