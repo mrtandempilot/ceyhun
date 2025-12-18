@@ -26,10 +26,9 @@ export async function GET(request: NextRequest) {
 
     if (convError) throw convError;
 
-    // Enrich with last message and message count
+    // Simple enrichment without external API calls
     const enrichedConversations = await Promise.all(
       (data || []).map(async (conv: any) => {
-        // Get last message
         const { data: lastMessages } = await supabaseAdmin
           .from('instagram_messages')
           .select('content, sender, created_at')
@@ -37,40 +36,13 @@ export async function GET(request: NextRequest) {
           .order('created_at', { ascending: false })
           .limit(1);
 
-        // Get message count
         const { count } = await supabaseAdmin
           .from('instagram_messages')
           .select('*', { count: 'exact', head: true })
           .eq('conversation_id', conv.id);
 
-        // Try to get username from Instagram API if not stored
-        let username = conv.customer_username;
-        if (!username) {
-          try {
-            const INSTAGRAM_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN || 'IGAAVCDzt1sIxBZAFlqUnJtejhGNGZAWdThlTG9QYkMyYWxISVBBUVZA6T0NVU2NET3pUQkJVUUNlcXlWMTYyRFFSNEN1M25oZAFlSemVaZAUFuZA0VYN2NYOG9HNkpfV3pEZAG92MHhSZA1pZAWFJkM1dmZA3dUNWU2Nl93LTFHNFZAJR3NlYwZDZD';
-            const response = await fetch(
-              `https://graph.instagram.com/v21.0/${conv.instagram_id}?fields=username&access_token=${INSTAGRAM_ACCESS_TOKEN}`
-            );
-
-            if (response.ok) {
-              const userData = await response.json();
-              username = userData.username;
-              // Update database with username if found
-              if (username) {
-                await supabaseAdmin
-                  .from('instagram_conversations')
-                  .update({ customer_username: username })
-                  .eq('id', conv.id);
-              }
-            }
-          } catch (userError) {
-            console.log('Could not fetch Instagram username:', userError);
-          }
-        }
-
         return {
           ...conv,
-          customer_username: username,
           lastMessage: lastMessages?.[0] || null,
           messageCount: count || 0
         };
