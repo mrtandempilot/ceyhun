@@ -270,16 +270,39 @@ export default function InstagramChatPage() {
               <>
                 {/* Chat Header */}
                 <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <Instagram className="w-5 h-5 text-pink-500" />
-                      {selectedConversation.customer_name || selectedConversation.customer_username || `User ${selectedConversation.instagram_id.slice(-6)}`}
-                      {selectedConversation.status === 'active' && (
-                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                      )}
-                    </h2>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                      <span>Instagram ID: ...{selectedConversation.instagram_id.slice(-8)}</span>
+                  <div className="flex items-center gap-3">
+                    {selectedConversation.profile_picture_url ? (
+                      <img
+                        src={selectedConversation.profile_picture_url}
+                        alt="Profile"
+                        className="w-14 h-14 rounded-full object-cover border-2 border-pink-300 shadow-sm"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement!;
+                          const fallback = document.createElement('div');
+                          fallback.className = 'w-14 h-14 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center shadow-sm';
+                          fallback.innerHTML = '<span class="text-white text-xl">👤</span>';
+                          parent.appendChild(fallback);
+                        }}
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center shadow-sm">
+                        <span className="text-white text-xl">👤</span>
+                      </div>
+                    )}
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <Instagram className="w-5 h-5 text-pink-500" />
+                        {selectedConversation.customer_name || selectedConversation.customer_username || `User ${selectedConversation.instagram_id.slice(-6)}`}
+                        {selectedConversation.status === 'active' && (
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        )}
+                      </h2>
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                        <span>@{selectedConversation.customer_username || selectedConversation.customer_username || 'instagram_user'}</span>
+                        <span>Instagram ID: ...{selectedConversation.instagram_id.slice(-8)}</span>
+                      </div>
                     </div>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${

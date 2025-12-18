@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // Fetch all conversations with last message and message count
     const { data, error: convError } = await supabaseAdmin
       .from('instagram_conversations')
-      .select('id, instagram_id, status, last_message_at, created_at, profile_picture_url')
+      .select('id, instagram_id, customer_name, customer_username, status, last_message_at, created_at, profile_picture_url')
       .order('last_message_at', { ascending: false });
 
     if (convError) throw convError;
@@ -43,8 +43,34 @@ export async function GET(request: NextRequest) {
           .select('*', { count: 'exact', head: true })
           .eq('conversation_id', conv.id);
 
+        // Try to get username from Instagram API if not stored
+        let username = conv.customer_username;
+        if (!username) {
+          try {
+            const INSTAGRAM_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN || 'IGAAVCDzt1sIxBZAFlqUnJtejhGNGZAWdThlTG9QYkMyYWxISVBBUVZA6T0NVU2NET3pUQkJVUUNlcXlWMTYyRFFSNEN1M25oZAFlSemVaZAUFuZA0VYN2NYOG9HNkpfV3pEZAG92MHhSZA1pZAWFJkM1dmZA3dUNWU2Nl93LTFHNFZAJR3NlYwZDZD';
+            const response = await fetch(
+              `https://graph.instagram.com/v21.0/${conv.instagram_id}?fields=username&access_token=${INSTAGRAM_ACCESS_TOKEN}`
+            );
+
+            if (response.ok) {
+              const userData = await response.json();
+              username = userData.username;
+              // Update database with username if found
+              if (username) {
+                await supabaseAdmin
+                  .from('instagram_conversations')
+                  .update({ customer_username: username })
+                  .eq('id', conv.id);
+              }
+            }
+          } catch (userError) {
+            console.log('Could not fetch Instagram username:', userError);
+          }
+        }
+
         return {
           ...conv,
+          customer_username: username,
           lastMessage: lastMessages?.[0] || null,
           messageCount: count || 0
         };
