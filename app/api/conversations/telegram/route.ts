@@ -62,7 +62,17 @@ export async function GET(request: NextRequest) {
 
       const { data: conversations, error } = await supabaseAdmin
         .from('telegram_conversations')
-        .select('*')
+        .select(`
+          *,
+          customers:customer_id (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            telegram_username
+          )
+        `)
         .order('last_message_at', { ascending: false });
 
       if (error) {
@@ -96,8 +106,17 @@ export async function GET(request: NextRequest) {
               console.error('❌ Error counting messages for', conv.id, ':', countError);
             }
 
+            // Get customer name from linked customer or fallback to conversation data
+            const customerData = conv.customers;
+            const displayName = customerData
+              ? `${customerData.first_name} ${customerData.last_name}`.trim()
+              : conv.customer_name || (conv.customer_username ? `@${conv.customer_username}` : `Chat ${conv.telegram_chat_id}`);
+
             processedConversations.push({
               ...conv,
+              customer_name: displayName,
+              customer_email: customerData?.email || null,
+              customer_phone: customerData?.phone || conv.customer_phone || null,
               lastMessage: undefined, // Skip last message for now
               messageCount: messageCount || 0
             });
