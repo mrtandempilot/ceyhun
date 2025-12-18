@@ -43,6 +43,7 @@ export default function InstagramChatPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [replyMessage, setReplyMessage] = useState('');
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const fetchConversations = async () => {
     setLoading(true);
@@ -145,16 +146,58 @@ export default function InstagramChatPage() {
     }
   }, [selectedConversationId]);
 
-  // Auto-refresh every 30 seconds
+  // Real-time updates using Server-Sent Events
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchConversations();
-      if (selectedConversationId) {
-        fetchMessages(selectedConversationId);
+    if (!autoRefresh) return;
+
+    console.log('🔗 Connecting to Instagram SSE...');
+
+    const eventSource = new EventSource('/api/sse/instagram');
+
+    eventSource.onopen = () => {
+      console.log('🔗 Instagram SSE connection established');
+      setLastRefresh(new Date());
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const update = JSON.parse(event.data);
+
+        if (update.type === 'connected') {
+          console.log('🔗 Instagram SSE connected and ready');
+          return;
+        }
+
+        console.log('🔗 Instagram SSE update received:', update.type);
+
+        if (update.type === 'conversations') {
+          // Refresh conversations list
+          fetchConversations();
+        } else if (update.type === 'messages' && selectedConversationId) {
+          // Refresh current conversation if it's the updated one
+          if (update.data && update.data.some((m: any) => m.conversation_id === selectedConversationId)) {
+            fetchMessages(selectedConversationId);
+          }
+          // Also refresh conversations to update last message
+          fetchConversations();
+        }
+
+        setLastRefresh(new Date());
+      } catch (error) {
+        console.error('❌ Instagram SSE message parse error:', error);
       }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [selectedConversationId]);
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('❌ Instagram SSE connection error:', error);
+      setAutoRefresh(false); // Disable auto-refresh on error
+    };
+
+    return () => {
+      console.log('🔌 Closing Instagram SSE connection');
+      eventSource.close();
+    };
+  }, [autoRefresh, selectedConversationId]);
 
   const filteredConversations = conversations.filter(conv => {
     if (!searchTerm) return true;
@@ -189,6 +232,17 @@ export default function InstagramChatPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                autoRefresh
+                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              {autoRefresh ? '🔄' : '⏸️'}
+              {autoRefresh ? 'Live' : 'Paused'}
+            </button>
             <button
               onClick={fetchConversations}
               disabled={loading}
