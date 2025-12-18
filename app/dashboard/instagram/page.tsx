@@ -21,6 +21,7 @@ interface InstagramConversation {
   status: string;
   last_message_at: string;
   created_at: string;
+  profile_picture_url?: string | null;
   lastMessage?: {
     content: string;
     sender: string;
@@ -210,7 +211,31 @@ export default function InstagramChatPage() {
                       selectedConversationId === conv.id ? 'bg-pink-50 border-l-4 border-l-pink-500' : ''
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        {conv.profile_picture_url ? (
+                          <img
+                            src={conv.profile_picture_url}
+                            alt="Profile"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-pink-200"
+                            onError={(e) => {
+                              // Hide image element if it fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              // Show fallback icon
+                              const parent = target.parentElement!;
+                              const fallback = document.createElement('div');
+                              fallback.className = 'w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center';
+                              fallback.innerHTML = '<span class="text-white text-lg">👤</span>';
+                              parent.appendChild(fallback);
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
+                            <span className="text-white text-lg">👤</span>
+                          </div>
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <p className="text-sm font-medium text-gray-900 truncate">

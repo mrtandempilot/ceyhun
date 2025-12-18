@@ -19,16 +19,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch all conversations with last message and message count
-    const { data: conversations, error: convError } = await supabaseAdmin
+    const { data, error: convError } = await supabaseAdmin
       .from('instagram_conversations')
-      .select('*')
+      .select('id, instagram_id, status, last_message_at, created_at, profile_picture_url')
       .order('last_message_at', { ascending: false });
 
     if (convError) throw convError;
 
     // Enrich with last message and message count
     const enrichedConversations = await Promise.all(
-      (conversations || []).map(async (conv) => {
+      (data || []).map(async (conv: any) => {
         // Get last message
         const { data: lastMessages } = await supabaseAdmin
           .from('instagram_messages')
