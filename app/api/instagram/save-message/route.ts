@@ -14,31 +14,57 @@ export async function POST(request: NextRequest) {
 
     // 1. Get or create conversation
     let conversationId: string;
-    
-    // Fetch user profile picture from Instagram API
+
+    // Fetch user profile from Instagram API
     let profilePictureUrl = null;
+    let username = null;
+    let fullName = null;
+
     try {
       const INSTAGRAM_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN || 'IGAAVCDzt1sIxBZAFlqUnJtejhGNGZAWdThlTG9QYkMyYWxISVBBUVZA6T0NVU2NET3pUQkJVUUNlcXlWMTYyRFFSNEN1M25oZAFlSemVaZAUFuZA0VYN2NYOG9HNkpfV3pEZAG92MHhSZA1pZAWFJkM1dmZA3dUNWU2Nl93LTFHNFZAJR3NlYwZDZD';
 
       const profileResponse = await fetch(
-        `https://graph.instagram.com/v21.0/${instagram_id}?fields=username,profile_picture_url&access_token=${INSTAGRAM_ACCESS_TOKEN}`
+        `https://graph.instagram.com/v21.0/${instagram_id}?fields=username,name,profile_picture_url&access_token=${INSTAGRAM_ACCESS_TOKEN}`
       );
 
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
         profilePictureUrl = profileData.profile_picture_url || null;
-        console.log('✅ Fetched Instagram profile picture for:', instagram_id);
+        username = profileData.username || null;
+        fullName = profileData.name || null;
+        console.log('✅ Fetched Instagram profile:', { username, fullName });
       } else {
-        console.log('⚠️ Could not fetch Instagram profile picture');
+        console.log('⚠️ Could not fetch Instagram profile');
       }
     } catch (profileError) {
-      console.log('⚠️ Error fetching Instagram profile picture:', profileError);
+      console.log('⚠️ Error fetching Instagram profile:', profileError);
+    }
+
+    // Try to find matching customer by Instagram username
+    let contactId = null;
+    let customerName = fullName || null;
+    let customerEmail = null;
+
+    if (username) {
+      const { data: matchingCustomer } = await supabaseAdmin
+        .from('customers')
+        .select('id, first_name, last_name, email')
+        .or(`notes.ilike.%${username}%,internal_notes.ilike.%${username}%`)
+        .limit(1)
+        .single();
+
+      if (matchingCustomer) {
+        contactId = matchingCustomer.id;
+        customerName = `${matchingCustomer.first_name} ${matchingCustomer.last_name}`;
+        customerEmail = matchingCustomer.email;
+        console.log('✅ Matched Instagram user to customer:', customerName);
+      }
     }
 
     // Check existing conversation
     const { data: existingConv, error: convError } = await supabaseAdmin
       .from('instagram_conversations')
-      .select('id, profile_picture_url')
+      .select('id, profile_picture_url, username, customer_name')
       .eq('instagram_id', instagram_id)
       .single();
 
@@ -46,10 +72,23 @@ export async function POST(request: NextRequest) {
       conversationId = existingConv.id;
       console.log('✅ Found existing conversation:', conversationId);
 
-      // Update last_message_at and profile picture if available
+      // Update conversation with new data if available
       const updates: any = { last_message_at: new Date().toISOString() };
+
       if (profilePictureUrl && profilePictureUrl !== existingConv.profile_picture_url) {
         updates.profile_picture_url = profilePictureUrl;
+      }
+      if (username && username !== existingConv.username) {
+        updates.username = username;
+      }
+      if (customerName && !existingConv.customer_name) {
+        updates.customer_name = customerName;
+      }
+      if (contactId) {
+        updates.contact_id = contactId;
+      }
+      if (customerEmail) {
+        updates.customer_email = customerEmail;
       }
 
       await supabaseAdmin
@@ -57,11 +96,15 @@ export async function POST(request: NextRequest) {
         .update(updates)
         .eq('id', conversationId);
     } else {
-      // Create new conversation
+      // Create new conversation with all available data
       const { data: newConv, error: createError } = await supabaseAdmin
         .from('instagram_conversations')
         .insert({
           instagram_id: instagram_id,
+          username: username,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          contact_id: contactId,
           status: 'active',
           last_message_at: new Date().toISOString(),
           profile_picture_url: profilePictureUrl
