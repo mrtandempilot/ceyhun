@@ -187,7 +187,7 @@
         "headerParameters": { "parameters": [{ "name": "Authorization", "value": "Bearer IGAAVCDzt1sIxBZAFlqUnJtejhGNGZAWdThlTG9QYkMyYWxISVBBUVZA6T0NVU2NET3pUQkJVUUNlcXlWMTYyRFFSNEN1M25oZAFlSemVaZAUFuZA0VYN2NYOG9HNkpfV3pEZAG92MHhSZA1pZAWFJkM1dmZA3dUNWU2Nl93LTFHNFZAJR3NlYwZDZD" }] },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"recipient\": {\n    \"id\": \"{{ $('Extract Message Data').item.json.sender_id }}\"\n  },\n  \"message\": {\n    \"text\": {{ JSON.stringify($json.output) }}\n  }\n}",
+        "jsonBody": "={\n  \"recipient\": {\n    \"id\": \"{{ $('Extract Message Data').item.json.sender_id }}\"\n  },\n  \"message\": {\n    \"text\": \"{{ $json.output }}\"\n  }\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
