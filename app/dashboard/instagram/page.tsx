@@ -17,7 +17,7 @@ interface InstagramConversation {
   id: string;
   instagram_id: string;
   customer_name: string | null;
-  customer_username: string | null;
+  username: string | null;
   status: string;
   last_message_at: string;
   created_at: string;
@@ -132,7 +132,7 @@ export default function InstagramChatPage() {
     return (
       conv.instagram_id.toLowerCase().includes(search) ||
       (conv.customer_name && conv.customer_name.toLowerCase().includes(search)) ||
-      (conv.customer_username && conv.customer_username.toLowerCase().includes(search)) ||
+      (conv.username && conv.username.toLowerCase().includes(search)) ||
       (conv.lastMessage && conv.lastMessage.content.toLowerCase().includes(search))
     );
   });
@@ -220,7 +220,7 @@ export default function InstagramChatPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <p className="text-sm font-medium text-gray-900 truncate">
-                            {conv.customer_name || conv.customer_username || `User ${conv.instagram_id.slice(-6)}`}
+                            {conv.customer_name || conv.username || `User ${conv.instagram_id.slice(-6)}`}
                           </p>
                           <span className="text-xs text-gray-500">
                             {new Date(conv.last_message_at).toLocaleDateString()}
@@ -258,13 +258,13 @@ export default function InstagramChatPage() {
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                         <Instagram className="w-5 h-5 text-pink-500" />
-                        {selectedConversation.customer_name || selectedConversation.customer_username || `User ${selectedConversation.instagram_id.slice(-6)}`}
+                        {selectedConversation.customer_name || selectedConversation.username || `User ${selectedConversation.instagram_id.slice(-6)}`}
                         {selectedConversation.status === 'active' && (
                           <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                         )}
                       </h2>
                       <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                        <span>@{selectedConversation.customer_username || selectedConversation.customer_username || 'instagram_user'}</span>
+                        <span>@{selectedConversation.username || 'instagram_user'}</span>
                         <span>Instagram ID: ...{selectedConversation.instagram_id.slice(-8)}</span>
                       </div>
                     </div>
