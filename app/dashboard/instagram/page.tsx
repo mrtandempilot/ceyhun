@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, RefreshCw, Search, Send, Instagram } from 'lucide-react';
+import { MessageCircle, RefreshCw, Search, Send, Instagram, Link, X as XIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface InstagramMessage {
@@ -47,6 +47,13 @@ export default function InstagramChatPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [userScrolledUp, setUserScrolledUp] = useState(false);
+  
+  // Link customer modal states
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [searchedCustomers, setSearchedCustomers] = useState<any[]>([]);
+  const [searchingCustomers, setSearchingCustomers] = useState(false);
+  const [linkingCustomer, setLinkingCustomer] = useState(false);
 
   // Auto-scroll to bottom function
   const scrollToBottom = (smooth = true) => {
@@ -130,6 +137,76 @@ export default function InstagramChatPage() {
       setSendingMessage(false);
     }
   };
+
+  // Search for customers
+  const searchCustomers = async (search: string) => {
+    if (search.length < 2) {
+      setSearchedCustomers([]);
+      return;
+    }
+    
+    setSearchingCustomers(true);
+    try {
+      const response = await fetch(`/api/instagram/link-customer?search=${encodeURIComponent(search)}`);
+      if (!response.ok) throw new Error('Failed to search customers');
+      const data = await response.json();
+      setSearchedCustomers(data.customers || []);
+    } catch (err) {
+      console.error('Error searching customers:', err);
+      setSearchedCustomers([]);
+    } finally {
+      setSearchingCustomers(false);
+    }
+  };
+
+  // Link Instagram user to customer
+  const linkToCustomer = async (customerEmail: string) => {
+    if (!selectedConversation) return;
+    
+    setLinkingCustomer(true);
+    try {
+      const response = await fetch('/api/instagram/link-customer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          instagram_id: selectedConversation.instagram_id,
+          customer_email: customerEmail
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to link customer');
+      }
+
+      const result = await response.json();
+      alert(result.message);
+      
+      // Refresh conversations to show updated info
+      await fetchConversations();
+      setShowLinkModal(false);
+      setCustomerSearchTerm('');
+      setSearchedCustomers([]);
+      
+    } catch (err: any) {
+      console.error('Error linking customer:', err);
+      alert(err.message || 'Failed to link customer. Please try again.');
+    } finally {
+      setLinkingCustomer(false);
+    }
+  };
+
+  // Debounce customer search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (customerSearchTerm) {
+        searchCustomers(customerSearchTerm);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [customerSearchTerm]);
 
   // Function to toggle manual mode for a conversation
   const toggleManualMode = async (conversationId: string, instagramId: string, enable: boolean) => {
@@ -424,12 +501,24 @@ export default function InstagramChatPage() {
                       </div>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${selectedConversation.status === 'active'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                    }`}>
-                    {selectedConversation.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {!(selectedConversation as any).customer_email && (
+                      <button
+                        onClick={() => setShowLinkModal(true)}
+                        className="flex items-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        title="Link to customer record"
+                      >
+                        <Link className="w-4 h-4" />
+                        Link Customer
+                      </button>
+                    )}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${selectedConversation.status === 'active'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-800'
+                      }`}>
+                      {selectedConversation.status}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Messages */}
@@ -521,6 +610,110 @@ export default function InstagramChatPage() {
           </div>
         </div>
       </div>
+
+      {/* Link Customer Modal */}
+      {showLinkModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-purple-50">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Link className="w-5 h-5 text-blue-500" />
+                Link to Customer
+              </h3>
+              <button
+                onClick={() => {
+                  setShowLinkModal(false);
+                  setCustomerSearchTerm('');
+                  setSearchedCustomers([]);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Search for a customer by name or email to link this Instagram user to their record.
+              </p>
+              
+              {/* Search Input */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={customerSearchTerm}
+                  onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                />
+              </div>
+
+              {/* Search Results */}
+              <div className="max-h-64 overflow-y-auto">
+                {searchingCustomers ? (
+                  <div className="flex justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+                  </div>
+                ) : searchedCustomers.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    {customerSearchTerm.length < 2 ? (
+                      <p className="text-sm">Type at least 2 characters to search</p>
+                    ) : (
+                      <p className="text-sm">No customers found</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {searchedCustomers.map((customer) => (
+                      <button
+                        key={customer.id}
+                        onClick={() => linkToCustomer(customer.email)}
+                        disabled={linkingCustomer}
+                        className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">
+                              {customer.first_name} {customer.last_name}
+                            </p>
+                            <p className="text-sm text-gray-600 truncate">{customer.email}</p>
+                            {customer.phone && (
+                              <p className="text-xs text-gray-500 mt-1">{customer.phone}</p>
+                            )}
+                          </div>
+                          {linkingCustomer ? (
+                            <RefreshCw className="w-4 h-4 animate-spin text-blue-500 ml-2" />
+                          ) : (
+                            <Link className="w-4 h-4 text-blue-500 ml-2" />
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={() => {
+                  setShowLinkModal(false);
+                  setCustomerSearchTerm('');
+                  setSearchedCustomers([]);
+                }}
+                className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
