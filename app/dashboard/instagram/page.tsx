@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, RefreshCw, Search, Send, Instagram, Link, X as XIcon } from 'lucide-react';
+import { MessageCircle, RefreshCw, Search, Send, Instagram, Link, X as XIcon, Settings } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface InstagramMessage {
@@ -352,6 +352,14 @@ export default function InstagramChatPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <a
+              href="/dashboard/instagram/manage"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-medium transition-colors"
+              title="Manage customer linkages"
+            >
+              <Settings className="w-4 h-4" />
+              Manage Links
+            </a>
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${autoRefresh
