@@ -21,7 +21,46 @@ export async function POST(request: NextRequest) {
       // Get or create conversation
       let conversation = await getOrCreateInstagramConversation(senderId);
 
-      // Save incoming message
+      // Check if manual mode is active
+      const { data: manualModeData } = await supabase
+        .from('instagram_conversations')
+        .select('manual_mode_active')
+        .eq('instagram_id', senderId)
+        .single();
+
+      const isManualModeActive = manualModeData?.manual_mode_active || false;
+
+      if (!isManualModeActive) {
+        // Auto mode: Forward to n8n workflow for AI response
+        console.log('Auto mode detected, forwarding to n8n workflow');
+
+        try {
+          const n8nWebhookUrl = `https://mvt36n7e.rpcld.com/webhook/b0e2892a-55b7-42f9-8309-0dd9373588da`;
+          const workflowResponse = await fetch(n8nWebhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              entry: [{
+                messaging: [messaging]
+              }]
+            })
+          });
+
+          if (!workflowResponse.ok) {
+            console.error('Failed to trigger n8n workflow:', workflowResponse.statusText);
+          } else {
+            console.log('Successfully triggered n8n workflow for auto response');
+            // Message will be saved by n8n workflow, not here
+            return NextResponse.json({ status: 'success' });
+          }
+        } catch (workflowError) {
+          console.error('Error triggering n8n workflow:', workflowError);
+        }
+      }
+
+      // Manual mode or fallback: Save message to database only
       await supabase
         .from('instagram_messages')
         .insert({
@@ -33,7 +72,7 @@ export async function POST(request: NextRequest) {
           status: 'delivered'
         });
 
-      console.log('Instagram message saved:', { senderId, messageText, conversationId: conversation.id });
+      console.log('Instagram message saved:', { senderId, messageText, conversationId: conversation.id, manualMode: isManualModeActive });
     }
 
     // Return hub.challenge for verification
