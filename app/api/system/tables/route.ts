@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 
 export async function GET(request: NextRequest) {
     try {
@@ -38,7 +33,7 @@ export async function GET(request: NextRequest) {
 
         // Get row count for each table
         const tableCounts = await Promise.all(
-            tables.map(async (tableName) => {
+            tables.map(async (tableName: string) => {
                 try {
                     const { count, error } = await supabase
                         .from(tableName)
@@ -64,7 +59,7 @@ export async function GET(request: NextRequest) {
         today.setHours(0, 0, 0, 0);
 
         const todayActivity = await Promise.all(
-            tables.map(async (tableName) => {
+            tables.map(async (tableName: string) => {
                 try {
                     const { count } = await supabase
                         .from(tableName)
@@ -85,20 +80,20 @@ export async function GET(request: NextRequest) {
         );
 
         // Combine data
-        const tableData = tableCounts.map((table, index) => ({
+        const tableData = tableCounts.map((table: any, index: number) => ({
             ...table,
             today_count: todayActivity[index].today_count,
         }));
 
         // Sort by count (descending)
-        tableData.sort((a, b) => b.count - a.count);
+        tableData.sort((a: any, b: any) => b.count - a.count);
 
         return NextResponse.json({
             success: true,
             data: tableData,
             total_tables: tableData.length,
-            total_records: tableData.reduce((sum, t) => sum + t.count, 0),
-            today_total: tableData.reduce((sum, t) => sum + t.today_count, 0),
+            total_records: tableData.reduce((sum: number, t: any) => sum + t.count, 0),
+            today_total: tableData.reduce((sum: number, t: any) => sum + t.today_count, 0),
         });
     } catch (error) {
         console.error('Error fetching tables:', error);

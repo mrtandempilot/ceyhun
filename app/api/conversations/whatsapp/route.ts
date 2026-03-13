@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Get last message for each conversation
     const conversationsWithMessages = await Promise.all(
-      conversations.map(async (conv) => {
+      conversations.map(async (conv: any) => {
         const { data: lastMessage } = await supabaseAdmin
           .from('whatsapp_messages')
           .select('content, sender, created_at')
