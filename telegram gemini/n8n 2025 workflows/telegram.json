@@ -1,0 +1,569 @@
+{
+  "name": "telegram ok",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -304,
+        -32
+      ],
+      "id": "12e448e5-81a0-4394-bef8-02f19b349901",
+      "name": "Telegram Trigger",
+      "webhookId": "1fe5deb3-0fd0-4c66-bbdc-6c432c916ef4",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "You are a helpful assistant for Skywalkers Tours in Fethiye, Turkey.\n\n📅 Current date: {{ $now() }}\n\n🎯 YOUR ROLE:\n- Help customers book tours\n- Answer questions about our 7 tours\n- Provide tour information (prices, times, meeting points)\n- Speak Turkish or English (detect customer's language)\n\n📦 AVAILABLE TOURS:\nUse the Google Sheets tool to get current tour information including:\n- Tour names and descriptions\n- Prices (USD or TRY)\n- Durations\n- Start times\n- Meeting points\n- What's included\n\n🗣️ COMMUNICATION STYLE:\n- Friendly and enthusiastic\n- Like a local expert guide\n- Never mention databases or AI tools\n\n✅ BOOKING PROCESS:\n\nWhen customer wants to book:\n\n1. Ask: \"Hotel pickup or meet at office?\"\n\n2. Collect information:\n   - Full name\n   - Email\n   - Phone (with country code)\n   - Tour name\n   - Preferred date\n   - Tour time\n   - Number of adults\n   - Number of children (if any)\n   - Hotel name (if pickup)\n\n3. Use Create_Booking tool with ALL details\n\n4. Use Send_Telegram_Notification tool immediately after\n\n5. Confirm to customer:\n   \"🎉 Booking Confirmed!\n   \n   📋 Details:\n   - Tour: [name]\n   - Date: [date]\n   - Time: [time]\n   - People: [X adults, Y children]\n   - Pickup: [hotel] / Meeting: [point]\n   \n   📱 Contact: +90 545 616 48 40\n   \n   See you soon! 🪂\"\n\n🚐 PICKUP INFO:\n- If hotel pickup: \"We'll pick you up 30 minutes before tour time\"\n- If office: \"Please arrive 20 minutes early at our office\"\n\n🌐 MULTI-LANGUAGE:\n- Detect if Turkish or English\n- Respond in their language\n\n⚠️ IMPORTANT:\n- ALWAYS create booking FIRST, then notification, then confirm\n- NEVER skip notification\n- Be specific about times and prices\n- Express enthusiasm!\n\nProvide excellent service! 🌟"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -32,
+        -96
+      ],
+      "id": "0c0ab900-a327-4dd1-b570-0f0a20ff515a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.0-flash-001",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        176
+      ],
+      "id": "4d13944a-91c8-4150-a621-e58707053e76",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "5vtbLyA68bKwKcxC",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        176
+      ],
+      "id": "e8dc84e2-1d0f-42b4-b331-9ec441736464",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $('AI Agent').item.json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        -16
+      ],
+      "id": "a79bbec7-5ca5-49ee-b7bc-7e51cf87d87a",
+      "name": "Send Telegram Reply",
+      "webhookId": "64f81993-c206-4968-9a96-93ce81deacac",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1VEJbG6rN7c1o3tgbc6VWOXp5NlYAQgP_Y3Ja_ERNbJA",
+          "mode": "list",
+          "cachedResultName": "Workflow lookup table",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1VEJbG6rN7c1o3tgbc6VWOXp5NlYAQgP_Y3Ja_ERNbJA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 603391593,
+          "mode": "list",
+          "cachedResultName": "workflow_lookup_table",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1VEJbG6rN7c1o3tgbc6VWOXp5NlYAQgP_Y3Ja_ERNbJA/edit#gid=603391593"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        304,
+        304
+      ],
+      "id": "1c641984-5c36-41ab-8930-cde13dab853e",
+      "name": "Workflow lookup table",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q74omjsza2nmZMrD",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1NNx1NYSvvl-qpTSvnNJUfx2_wuf2OvOUBNtMgNr1GpU",
+          "mode": "list",
+          "cachedResultName": "skywalkers_knowledge_base_UPDATED",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NNx1NYSvvl-qpTSvnNJUfx2_wuf2OvOUBNtMgNr1GpU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 839182610,
+          "mode": "list",
+          "cachedResultName": "skywalkers_knowledge_base_UPDATED",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NNx1NYSvvl-qpTSvnNJUfx2_wuf2OvOUBNtMgNr1GpU/edit#gid=839182610"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        432,
+        304
+      ],
+      "id": "777129c9-0a0e-4319-9f74-989b35676923",
+      "name": "skywalkers_knowledge_base",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q74omjsza2nmZMrD",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1GTZEdvc_ioBCKIwv5Y-qKSChEiRdVgs8H7-STqMtWpQ",
+          "mode": "list",
+          "cachedResultName": "customer_bookings",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GTZEdvc_ioBCKIwv5Y-qKSChEiRdVgs8H7-STqMtWpQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 543883647,
+          "mode": "list",
+          "cachedResultName": "customer_bookings",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GTZEdvc_ioBCKIwv5Y-qKSChEiRdVgs8H7-STqMtWpQ/edit#gid=543883647"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        560,
+        304
+      ],
+      "id": "738e063e-0433-4899-ae86-302db9140273",
+      "name": "customer_bookings",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q74omjsza2nmZMrD",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1dZ9bw37nMhkcwMJVfRpyVfV13jMx2by7dcUIceXqRVI",
+          "mode": "list",
+          "cachedResultName": "conversation_patterns",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dZ9bw37nMhkcwMJVfRpyVfV13jMx2by7dcUIceXqRVI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1486325089,
+          "mode": "list",
+          "cachedResultName": "conversation_patterns",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dZ9bw37nMhkcwMJVfRpyVfV13jMx2by7dcUIceXqRVI/edit#gid=1486325089"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        688,
+        304
+      ],
+      "id": "2fcc7afe-905f-4db6-b746-fbc63111ceaa",
+      "name": "conversation_patterns",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q74omjsza2nmZMrD",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        816,
+        304
+      ],
+      "id": "3ae5e0bc-3eeb-4c51-8706-25899dbb8ad6",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "chatId": "1291038782",
+        "text": "={{ $fromAI('notification_message', 'Create Telegram notification with: customer name, email, phone, tour name, date, time, adults, children, hotel name, format with emojis') }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1,
+      "position": [
+        944,
+        304
+      ],
+      "id": "db85c992-f617-4086-8848-63c95821801a",
+      "name": "Send_Telegram_Notification",
+      "webhookId": "f452f7ab-8590-45a9-ae18-7ab0e3e0e1d3",
+      "credentials": {
+        "telegramApi": {
+          "id": "G27poapTjf0q14vI",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1LGumNffS4uVrwRUEkMdqTYDLGFP9H__APaozpXMkfLI",
+          "mode": "list",
+          "cachedResultName": "Fethiye_44_Tours",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1LGumNffS4uVrwRUEkMdqTYDLGFP9H__APaozpXMkfLI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1788495448,
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1LGumNffS4uVrwRUEkMdqTYDLGFP9H__APaozpXMkfLI/edit#gid=1788495448"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        1072,
+        304
+      ],
+      "id": "6db2b6d9-19a5-4a6e-be5f-acf2cf985f0b",
+      "name": "Get_Tour_Info",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q74omjsza2nmZMrD",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "n8n AI wbchat",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sessionID",
+              "fieldValue": "={{ $('When chat message received').item.json.sessionId }}"
+            },
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $fromAI('customer_name', 'Customer name if mentioned') }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $fromAI('customer_email', 'Customer email if mentioned') }}"
+            },
+            {
+              "fieldId": "memory",
+              "fieldValue": "={{ $fromAI('memory', 'Brief summary of conversation context and customer preferences') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        304
+      ],
+      "id": "ec2609b2-e71a-4f42-8244-88e54a5e7c7e",
+      "name": "Store_Memory",
+      "credentials": {
+        "supabaseApi": {
+          "id": "imxxVkQE1ZlUBN8k",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "bookings",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "customer_name",
+              "fieldValue": "={{ $fromAI('customer_name', 'Customer full name') }}"
+            },
+            {
+              "fieldId": "customer_email",
+              "fieldValue": "={{ $fromAI('customer_email', 'Customer email address') }}"
+            },
+            {
+              "fieldId": "customer_phone",
+              "fieldValue": "={{ $fromAI('customer_phone', 'Customer phone with country code') }}"
+            },
+            {
+              "fieldId": "tour_name",
+              "fieldValue": "={{ $fromAI('tour_name', 'Tour name') }}"
+            },
+            {
+              "fieldId": "booking_date",
+              "fieldValue": "={{ $fromAI('booking_date', 'Tour date YYYY-MM-DD') }}"
+            },
+            {
+              "fieldId": "tour_start_time",
+              "fieldValue": "={{ $fromAI('tour_start_time', 'Tour start time HH:MM') }}"
+            },
+            {
+              "fieldId": "adults",
+              "fieldValue": "={{ $fromAI('adults', 'Number of adults') || 1 }}"
+            },
+            {
+              "fieldId": "children",
+              "fieldValue": "={{ $fromAI('children', 'Number of children') || 0 }}"
+            },
+            {
+              "fieldId": "hotel_name",
+              "fieldValue": "={{ $fromAI('hotel_name', 'Hotel name if pickup needed') }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "website"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        304
+      ],
+      "id": "097c8196-76da-4712-97b4-a76505a03ee2",
+      "name": "Create_Booking",
+      "credentials": {
+        "supabaseApi": {
+          "id": "imxxVkQE1ZlUBN8k",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow lookup table": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "skywalkers_knowledge_base": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "customer_bookings": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "conversation_patterns": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send_Telegram_Notification": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get_Tour_Info": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store_Memory": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create_Booking": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "d7b20029-e70c-4552-b3bc-020e51e8157c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8d28a9671075f0b5891a19de3804cee75b0d422edb952b37771a7916cd08431c"
+  },
+  "id": "AxJfdQELq3VzA39c",
+  "tags": []
+}

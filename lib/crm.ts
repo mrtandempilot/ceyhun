@@ -489,11 +489,11 @@ export async function getWhatsAppStats() {
     const lastActivity = recentMessage?.created_at || null;
     const lastActivityFormatted = lastActivity
       ? new Date(lastActivity).toLocaleString('en-US', {
-          minute: '2-digit',
-          hour: '2-digit',
-          day: '2-digit',
-          month: 'short'
-        })
+        minute: '2-digit',
+        hour: '2-digit',
+        day: '2-digit',
+        month: 'short'
+      })
       : 'No recent activity';
 
     return {
@@ -622,17 +622,104 @@ export async function getChatBotStats() {
   }
 }
 
+export async function getBlogStats() {
+  try {
+    console.log('🔍 Fetching blog stats...');
+
+    // First, let's check if posts table exists and has any data
+    const { data: allPosts, error: checkError } = await supabase
+      .from('posts')
+      .select('id, title, status, visibility, published_at, created_at')
+      .limit(50); // Increased limit to see all your posts
+
+    if (checkError) {
+      console.error('❌ Error checking posts:', checkError);
+      console.error('❌ This likely means the posts table does not exist or has RLS issues');
+      return {
+        totalPosts: 0,
+        postsToday: 0,
+        debug: { error: checkError.message }
+      };
+    }
+
+    console.log('🔍 All posts in database:', allPosts);
+    console.log('🔍 Total posts found:', allPosts?.length || 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get total published posts (following the same criteria as the blog API)
+    const { count: totalPosts, error: countError } = await supabase
+      .from('posts')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'published')
+      .or('visibility.is.null,visibility.eq.public');
+
+    if (countError) {
+      console.error('❌ Error counting total posts:', countError);
+    } else {
+      console.log('✅ Total published posts count:', totalPosts);
+    }
+
+    // Get posts published today
+    const { count: postsToday, error: todayError } = await supabase
+      .from('posts')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'published')
+      .or('visibility.is.null,visibility.eq.public')
+      .gte('published_at', today.toISOString())
+      .lte('published_at', today.toISOString().replace('T00:00:00.000Z', 'T23:59:59.999Z'));
+
+    if (todayError) {
+      console.error('❌ Error counting posts today:', todayError);
+    } else {
+      console.log('✅ Posts published today:', postsToday);
+    }
+
+    const result = {
+      totalPosts: totalPosts || 0,
+      postsToday: postsToday || 0,
+      debug: {
+        totalPostsInQuery: allPosts?.length || 0,
+        totalPublished: totalPosts || 0,
+        todaysPosts: postsToday || 0,
+        allPosts: allPosts,
+        hasCountError: !!countError,
+        hasTodayError: !!todayError
+      }
+    };
+
+    console.log('🎯 Final blog stats result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Critical error fetching blog stats:', error);
+    return {
+      totalPosts: 0,
+      postsToday: 0,
+      debug: { criticalError: error instanceof Error ? error.message : 'Unknown error' }
+    };
+  }
+}
+
 // ============================================
 // UPCOMING BOOKINGS
 // ============================================
 
-export async function getUpcomingBookings(limit: number = 5) {
+// ============================================
+// UPCOMING BOOKINGS
+// ============================================
+
+export async function getUpcomingBookings(limit: number = 10) { // Increased limit to see more
   try {
     const now = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7); // Check last 7 days
 
     console.log('🔍 Upcoming Bookings: Current date filter:', now.toISOString().split('T')[0]);
+    console.log('🔍 Also checking bookings from last 7 days for Instagram etc.');
 
-    const { data: bookings, error } = await supabase
+    // First, get upcoming bookings (future dates with proper status)
+    const { data: futureBookings, error: futureError } = await supabase
       .from('bookings')
       .select(`
         id,
@@ -644,20 +731,61 @@ export async function getUpcomingBookings(limit: number = 5) {
         tour_start_time,
         status,
         total_amount,
-        created_at
+        created_at,
+        channel,
+        notes
       `)
-      .eq('status', 'confirmed')
+      .in('status', ['pending', 'confirmed']) // Show both pending and confirmed bookings
       .gte('booking_date', now.toISOString().split('T')[0]) // Future dates
       .order('booking_date', { ascending: true })
-      .order('tour_start_time', { ascending: true })
-      .limit(limit);
+      .order('tour_start_time', { ascending: true });
 
-    if (error) throw error;
+    if (futureError) throw futureError;
 
-    console.log('🔍 Upcoming Bookings: Raw data from database:', bookings);
+    // Also get recent bookings that might be Instagram or other sources (last 7 days)
+    const { data: recentBookings, error: recentError } = await supabase
+      .from('bookings')
+      .select(`
+        id,
+        customer_name,
+        customer_phone,
+        customer_email,
+        tour_name,
+        booking_date,
+        tour_start_time,
+        status,
+        total_amount,
+        created_at,
+        channel,
+        notes
+      `)
+      .gte('created_at', sevenDaysAgo.toISOString()) // All bookings from last 7 days
+      .order('created_at', { ascending: false });
 
-        // Format the data for display
-        const formattedBookings = bookings?.map((booking: any) => ({
+    if (recentError) throw recentError;
+
+    // Combine and deduplicate bookings
+    const bookingMap = new Map();
+    (futureBookings || []).forEach(booking => bookingMap.set(booking.id, booking));
+    (recentBookings || []).forEach(booking => bookingMap.set(booking.id, booking));
+
+    const allBookings = Array.from(bookingMap.values())
+      .sort((a, b) => {
+        // Sort by booking_date first, then by created_at (recent first)
+        const dateA = new Date(a.booking_date).getTime();
+        const dateB = new Date(b.booking_date).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      })
+      .slice(0, limit); // Limit after sorting
+
+    console.log('🔍 Upcoming Bookings: Future bookings count:', futureBookings?.length || 0);
+    console.log('🔍 Recent bookings count (last 7 days):', recentBookings?.length || 0);
+    console.log('🔍 Combined bookings count:', allBookings.length);
+    console.log('🔍 Sample booking channels:', allBookings.slice(0, 3).map(b => ({ id: b.id, status: b.status, channel: b.channel })));
+
+    // Format the data for display
+    const formattedBookings = allBookings.map((booking: any) => ({
       id: booking.id,
       customer_name: booking.customer_name,
       tour_name: booking.tour_name,
@@ -670,8 +798,9 @@ export async function getUpcomingBookings(limit: number = 5) {
       amount: booking.total_amount,
       phone: booking.customer_phone,
       email: booking.customer_email,
+      status: booking.status, // Include status for display
       display_time: booking.tour_start_time ? booking.tour_start_time.slice(0, 5) : 'TBD' // Remove seconds
-    })) || [];
+    }));
 
     console.log('🔍 Upcoming Bookings: Formatted result:', formattedBookings);
 

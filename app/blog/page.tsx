@@ -3,20 +3,56 @@ import BlogCard from '@/components/BlogCard';
 import BlogPagination from '@/components/BlogPagination';
 import Link from 'next/link';
 import { PostWithRelations, PostCategory, PostTag } from '@/types/blog';
+import Image from 'next/image';
+
+import { generateBlogStructuredData } from '@/lib/seo';
+
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.oludeniz.tours'; // Fallback to production domain
 
 export const metadata: Metadata = {
     title: 'Blog - Oludeniz Tours | Adventure Stories & Travel Tips',
     description: 'Discover amazing adventure stories, travel tips, and guides from Oludeniz. Read about paragliding experiences, local attractions, and more.',
+    keywords: 'Oludeniz blog, Turkey travel guide, paragliding tips, Fethiye attractions, adventure stories',
+    alternates: {
+        canonical: `${baseUrl}/blog`,
+    },
     openGraph: {
         title: 'Blog - Oludeniz Tours',
         description: 'Adventure stories, travel tips, and guides from Oludeniz',
+        url: `${baseUrl}/blog`,
+        siteName: 'Oludeniz Tours',
+        images: [
+            {
+                url: `${baseUrl}/og-blog.jpg`, // Ensure this image exists or use a fallback
+                width: 1200,
+                height: 630,
+                alt: 'Oludeniz Tours Blog',
+            },
+        ],
+        locale: 'en_US',
         type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Blog - Oludeniz Tours',
+        description: 'Adventure stories, travel tips, and guides from Oludeniz',
+        images: [`${baseUrl}/og-blog.jpg`],
+    },
+    robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            'max-video-preview': -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+        },
     },
 };
 
-// Force dynamic rendering - always fetch fresh data
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Use ISR (Incremental Static Regeneration) for better SEO performance
+export const revalidate = 3600; // Revalidate every hour
 
 async function getBlogPosts(page: number = 1) {
     try {
@@ -87,11 +123,16 @@ export default async function BlogPage({
 
     const featuredPost = posts[0]; // Always show latest post
     const regularPosts = posts.filter((p: PostWithRelations) => p.id !== featuredPost?.id);
+    const structuredData = generateBlogStructuredData(baseUrl);
 
     return (
         <main className="min-h-screen bg-gray-50">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+            />
             {/* Hero Section with Featured Post */}
-            {featuredPost && currentPage === 1 && (
+            {featuredPost && currentPage === 1 ? (
                 <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                         <div className="grid md:grid-cols-2 gap-8 items-center">
@@ -126,18 +167,32 @@ export default async function BlogPage({
                                 </Link>
                             </div>
                             {featuredPost.featured_image && (
-                                <div className="relative h-64 md:h-96 rounded-lg overflow-hidden shadow-2xl">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
+                               <div className="relative h-64 md:h-96 rounded-lg overflow-hidden shadow-2xl">
+                                    <Image
                                         src={featuredPost.featured_image}
                                         alt={featuredPost.featured_image_alt || featuredPost.title}
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        className="object-cover"
+                                        priority
+                                        sizes="(max-width: 768px) 100vw, 50vw"
                                     />
                                 </div>
                             )}
                         </div>
                     </div>
                 </section>
+            ) : (
+                /* Fallback Hero / Header when no featured post or not on page 1 */
+                <div className="bg-white border-b border-gray-200">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <h1 className="text-3xl font-bold text-gray-900">
+                            Our Blog
+                        </h1>
+                        <p className="mt-2 text-gray-600">
+                            Adventure Stories & Travel Tips from Oludeniz
+                        </p>
+                    </div>
+                </div>
             )}
 
             {/* Main Content */}
@@ -187,7 +242,7 @@ export default async function BlogPage({
                                                 <span className="flex items-center space-x-2">
                                                     <span
                                                         className="w-3 h-3 rounded-full"
-                                                        style={{ backgroundColor: category.color }}
+                                                        style={{ backgroundColor: category.color || '#ccc' }}
                                                     />
                                                     <span>{category.name}</span>
                                                 </span>

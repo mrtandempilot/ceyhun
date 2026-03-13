@@ -14,10 +14,15 @@
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  padding-top: 80px; /* Height of the fixed navbar */
 }
 
 @layer utilities {

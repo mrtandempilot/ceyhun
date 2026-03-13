@@ -1,0 +1,484 @@
+{
+    "name": "Instagram Messages with SQL Direct Save",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "instagram-direct-sql",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -800,
+                -60
+            ],
+            "id": "instagram-webhook",
+            "name": "Instagram Webhook"
+        },
+        {
+            "parameters": {
+                "respondWith": "text",
+                "responseBody": "OK",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.4,
+            "position": [
+                -520,
+                -300
+            ],
+            "id": "respond-ok",
+            "name": "Respond OK"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "leftValue": "={{ $json.body.entry[0].messaging[0].message.is_echo }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "notExists",
+                                "singleValue": true
+                            },
+                            "id": "skip-echo"
+                        },
+                        {
+                            "leftValue": "={{ $json.body.entry[0].messaging[0].message.text }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "isNotEmpty",
+                                "singleValue": true
+                            },
+                            "id": "has-text"
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -600,
+                -60
+            ],
+            "id": "filter-messages",
+            "name": "Filter Valid Messages"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "extract-sender",
+                            "name": "sender_id",
+                            "value": "={{ $json.body.entry[0].messaging[0].sender.id }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "extract-text",
+                            "name": "message_text",
+                            "value": "={{ $json.body.entry[0].messaging[0].message.text }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "extract-mid",
+                            "name": "message_id",
+                            "value": "={{ $json.body.entry[0].messaging[0].message.mid }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "timestamp",
+                            "name": "received_at",
+                            "value": "={{ new Date().toISOString() }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -400,
+                -60
+            ],
+            "id": "extract-data",
+            "name": "Extract Message Data"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT id FROM instagram_conversations WHERE instagram_id = '{{$json.sender_id}}'",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.postgreSql",
+            "typeVersion": 1.4,
+            "position": [
+                -200,
+                -60
+            ],
+            "id": "find-conversation",
+            "name": "Find Existing Conversation",
+            "credentials": {
+                "postgreSQL": {
+                    "id": "supabase-postgres",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "leftValue": "={{ $('Find Existing Conversation').item.json.id }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "isEmpty",
+                                "singleValue": true
+                            },
+                            "id": "no-conversation"
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                0,
+                -60
+            ],
+            "id": "check-conversation",
+            "name": "Check Conversation Exists"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "INSERT INTO instagram_conversations (instagram_id, status, last_message_at) VALUES ('{{$json.sender_id}}', 'active', '{{$json.received_at}}') ON CONFLICT (instagram_id) DO UPDATE SET last_message_at = '{{$json.received_at}}' RETURNING id",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.postgreSql",
+            "typeVersion": 1.4,
+            "position": [
+                200,
+                -200
+            ],
+            "id": "create-conversation",
+            "name": "Create/Update Conversation",
+            "credentials": {
+                "postgreSQL": {
+                    "id": "supabase-postgres",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "set-conv-id",
+                            "name": "conversation_id",
+                            "value": "={{ $('Create/Update Conversation').item.json.id || $('Find Existing Conversation').item.json.id }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                400,
+                -60
+            ],
+            "id": "set-conversation-id",
+            "name": "Set Conversation ID"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "INSERT INTO instagram_messages (conversation_id, message_id, sender, content, status) VALUES ('{{$json.conversation_id}}', '{{$json.message_id}}', 'customer', '{{$json.message_text}}', 'delivered')",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.postgreSql",
+            "typeVersion": 1.4,
+            "position": [
+                600,
+                -60
+            ],
+            "id": "save-incoming-message",
+            "name": "Save Incoming Message",
+            "credentials": {
+                "postgreSQL": {
+                    "id": "supabase-postgres",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $json.message_text }}",
+                "options": {
+                    "systemMessage": "You are a helpful assistant for Skywalkers Tours in Fethiye, Turkey.\n\n📅 Current date: {{ new Date().toISOString().split('T')[0] }}\n\n📊 TOUR INFORMATION:\n- Total pilots: 5\n- Maximum capacity per hour: 6 people\n\n🎯 YOUR ROLE:\n- Help customers book tours\n- Answer questions about our 7 tours\n- Provide tour information (prices, times, meeting points)\n- Speak Turkish or English (detect customer's language)\n\n🤖 RESPONSE GUIDELINES:\n- Keep responses under 500 characters\n- Be friendly and helpful\n- Use emojis sparingly\n- If customer wants to book, ask for their preferred date/time"
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3,
+            "position": [
+                800,
+                -60
+            ],
+            "id": "ai-agent",
+            "name": "AI Agent"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "INSERT INTO instagram_messages (conversation_id, message_id, sender, content, status) VALUES ('{{$json.conversation_id}}', 'response_{{Date.now()}}', 'business', '{{ $('AI Agent').item.json.output.toJsonString() }}', 'sent')",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.postgreSql",
+            "typeVersion": 1.4,
+            "position": [
+                1000,
+                -60
+            ],
+            "id": "save-ai-response",
+            "name": "Save AI Response",
+            "credentials": {
+                "postgreSQL": {
+                    "id": "supabase-postgres",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignTo": "item",
+                "mappingMode": "mappingPairs",
+                "value": null,
+                "pairs": {
+                    "pairs": [
+                        {
+                            "to": "recipient_id",
+                            "from": "sender_id",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                1200,
+                -60
+            ],
+            "id": "prepare-send",
+            "name": "Prepare Send"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://graph.facebook.com/v18.0/YOUR_INSTA_ACCOUNT_ID/messages",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpBearerAuth",
+                "sendBody": true,
+                "sendQuery": true,
+                "parameters": {
+                    "body": {
+                        "recipient": {
+                            "id": "={{$parameter[\"recipient_id\"]}}"
+                        },
+                        "message": {
+                            "text": "={{$('AI Agent').item.json.output.toJsonString()}}"
+                        }
+                    }
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                1400,
+                -60
+            ],
+            "id": "send-reply",
+            "name": "Send Reply to Instagram",
+            "credentials": {
+                "httpBearerAuth": {
+                    "id": "instagram-access-token",
+                    "name": "Instagram Access Token"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Instagram Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Respond OK",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Filter Valid Messages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Valid Messages": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Message Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Message Data": {
+            "main": [
+                [
+                    {
+                        "node": "Find Existing Conversation",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Find Existing Conversation": {
+            "main": [
+                [
+                    {
+                        "node": "Check Conversation Exists",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Conversation Exists": {
+            "main": [
+                [
+                    {
+                        "node": "Create/Update Conversation",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Set Conversation ID",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create/Update Conversation": {
+            "main": [
+                [
+                    {
+                        "node": "Set Conversation ID",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Conversation ID": {
+            "main": [
+                [
+                    {
+                        "node": "Save Incoming Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save Incoming Message": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Save AI Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save AI Response": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Send",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Send": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply to Instagram",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "instagram-sql-workflow"
+    },
+    "tags": [
+        "instagram",
+        "sql",
+        "supabase"
+    ]
+}
