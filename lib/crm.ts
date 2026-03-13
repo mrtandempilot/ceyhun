@@ -28,14 +28,14 @@ export async function getCustomers() {
     .select('customer_email, total_amount, status');
 
   // Calculate total_spent and total_bookings for each customer
-  const customersWithStats = customers?.map(customer => {
-    const customerBookings = bookings?.filter(b => b.customer_email === customer.email) || [];
-    const completedBookings = customerBookings.filter(b => b.status === 'completed');
+  const customersWithStats = customers?.map((customer: any) => {
+    const customerBookings = bookings?.filter((b: any) => b.customer_email === customer.email) || [];
+    const completedBookings = customerBookings.filter((b: any) => b.status === 'completed');
 
     return {
       ...customer,
       total_bookings: customerBookings.length,
-      total_spent: completedBookings.reduce((sum, b) => sum + (b.total_amount || 0), 0)
+      total_spent: completedBookings.reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0)
     };
   }) || [];
 
@@ -766,8 +766,8 @@ export async function getUpcomingBookings(limit: number = 10) { // Increased lim
 
     // Combine and deduplicate bookings
     const bookingMap = new Map();
-    (futureBookings || []).forEach(booking => bookingMap.set(booking.id, booking));
-    (recentBookings || []).forEach(booking => bookingMap.set(booking.id, booking));
+    (futureBookings || []).forEach((booking: any) => bookingMap.set(booking.id, booking));
+    (recentBookings || []).forEach((booking: any) => bookingMap.set(booking.id, booking));
 
     const allBookings = Array.from(bookingMap.values())
       .sort((a, b) => {

@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
           .eq('customer_email', customer_email)
           .eq('status', 'completed');
 
-        const totalSpent = completedBookings?.reduce((sum, b) => sum + (b.total_amount || 0), 0) || 0;
+        const totalSpent = completedBookings?.reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0) || 0;
         const totalBookings = completedBookings?.length || 0;
 
         const { data: allBookings } = await supabaseAdmin

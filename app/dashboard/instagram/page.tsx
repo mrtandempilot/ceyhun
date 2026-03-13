@@ -265,7 +265,7 @@ export default function InstagramChatPage() {
           schema: 'public',
           table: 'instagram_messages'
         },
-        (payload) => {
+        (payload: any) => {
           console.log('🔔 New Instagram message received:', payload);
           const newMessage = payload.new as InstagramMessage;
 
@@ -288,7 +288,7 @@ export default function InstagramChatPage() {
           setLastRefresh(new Date());
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: any) => {
         console.log('📡 Messages subscription status:', status);
       });
 
@@ -302,13 +302,13 @@ export default function InstagramChatPage() {
           schema: 'public',
           table: 'instagram_conversations'
         },
-        (payload) => {
+        (payload: any) => {
           console.log('🔔 Instagram conversation updated:', payload);
           fetchConversations();
           setLastRefresh(new Date());
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: any) => {
         console.log('📡 Conversations subscription status:', status);
       });
 

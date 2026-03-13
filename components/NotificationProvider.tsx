@@ -49,11 +49,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             event: 'INSERT',
             schema: 'public',
             table: 'bookings'
-          }, (payload) => {
+          }, (payload: any) => {
             console.log('🔔 Real-time booking received:', payload.new);
             handleNewBooking(payload.new);
           })
-          .subscribe((status) => {
+          .subscribe((status: any) => {
             console.log('🔔 Subscription status:', status);
             setIsSubscribed(status === 'SUBSCRIBED');
           });
@@ -66,7 +66,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             schema: 'public',
             table: 'whatsapp_messages',
             filter: `sender=eq.customer`
-          }, (payload) => {
+          }, (payload: any) => {
             console.log('🔔 New WhatsApp message received:', payload.new);
             handleNewWhatsAppMessage(payload.new);
           })

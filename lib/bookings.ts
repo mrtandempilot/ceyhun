@@ -34,7 +34,7 @@ export async function checkPilotAvailability(
       throw new Error('Failed to fetch existing bookings');
     }
 
-    const bookedPassengers = existingBookings?.reduce((total, booking) => {
+    const bookedPassengers = existingBookings?.reduce((total: number, booking: any) => {
       return total + (booking.adults || 0) + (booking.children || 0);
     }, 0) || 0;
 

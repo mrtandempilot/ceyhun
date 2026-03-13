@@ -81,8 +81,8 @@ export default function ReportsPage() {
         expensesQuery
       ]);
 
-      const totalRevenue = (invoicesResult.data || []).reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-      const totalExpenses = (expensesResult.data || []).reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
+      const totalRevenue = (invoicesResult.data || []).reduce((sum: number, inv: any) => sum + (inv.total_amount || 0), 0);
+      const totalExpenses = (expensesResult.data || []).reduce((sum: number, exp: any) => sum + (Number(exp.amount) || 0), 0);
       const netProfit = totalRevenue - totalExpenses;
       const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 

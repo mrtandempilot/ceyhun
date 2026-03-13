@@ -101,7 +101,7 @@ export default function AdminBookingsPage() {
 
       if (!customerError && customers) {
         const customerMap = new Map<string, Customer>();
-        customers.forEach(customer => {
+        customers.forEach((customer: any) => {
           customerMap.set(customer.email, {
             email: customer.email,
             name: customer.name,
@@ -121,7 +121,7 @@ export default function AdminBookingsPage() {
 
       if (invoicesData) {
         const invoiceMap = new Map<string, Invoice>();
-        invoicesData.forEach(invoice => {
+        invoicesData.forEach((invoice: any) => {
           if (invoice.booking_id) {
             invoiceMap.set(invoice.booking_id, invoice);
           }
