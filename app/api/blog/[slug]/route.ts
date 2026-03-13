@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { PostWithRelations } from '@/types/blog';
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function GET(
     request: NextRequest,
@@ -87,7 +78,7 @@ export async function GET(
               tag:post_tags(*)
             )
           `)
-                    .in('id', relatedPostIds.map(p => p.post_id))
+                    .in('id', relatedPostIds.map((p: any) => p.post_id))
                     .eq('status', 'published')
                     .lte('published_at', new Date().toISOString())
                     .limit(3);
