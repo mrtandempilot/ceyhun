@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
           .eq('user_id', user.id)
           .eq('status', 'completed');
 
-        const totalSpent = completedBookings?.reduce((sum, b) => sum + (b.price || 0), 0) || 0;
+        const totalSpent = completedBookings?.reduce((sum: number, b: any) => sum + (b.price || 0), 0) || 0;
         const totalBookings = completedBookings?.length || 0;
 
         // Get all bookings (any status) for count
@@ -253,7 +253,7 @@ export async function GET(request: NextRequest) {
     // Filter bookings for this user:
     // 1. Bookings with matching user_id (regular web bookings)
     // 2. Instagram bookings with matching email (Instagram customers)
-    const filteredBookings = data.filter(booking => {
+    const filteredBookings = data.filter((booking: any) => {
       // Regular user bookings
       if (booking.user_id === user.id) {
         return true;
