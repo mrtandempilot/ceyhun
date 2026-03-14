@@ -18,33 +18,65 @@ export async function getSystemStatus() {
   }
 
   // 1. Get today's bookings
-  const { count: todayBookings, error: bookingsError } = await supabaseAdmin
-    .from('bookings')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', todayISO)
-    .lt('created_at', tomorrowISO);
+  const [
+    { count: todayBookings, error: bookingsError },
+    { data: revenueData },
+    { count: pendingBookings },
+    { count: activePilots },
+    { count: telegramMsgsToday },
+    { count: whatsappMsgsToday },
+    { count: newCustomersToday }
+  ] = await Promise.all([
+    supabaseAdmin
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', todayISO)
+      .lt('created_at', tomorrowISO),
+    
+    supabaseAdmin
+      .from('bookings')
+      .select('total_amount')
+      .eq('status', 'confirmed')
+      .gte('created_at', todayISO)
+      .lt('created_at', tomorrowISO),
 
-  // 2. Get today's revenue (confirmed bookings)
-  const { data: revenueData, error: revenueError } = await supabaseAdmin
-    .from('bookings')
-    .select('total_amount')
-    .eq('status', 'confirmed')
-    .gte('created_at', todayISO)
-    .lt('created_at', tomorrowISO);
+    supabaseAdmin
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending'),
+
+    supabaseAdmin
+      .from('pilots')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active'),
+
+    supabaseAdmin
+      .from('telegram_messages')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', todayISO),
+
+    supabaseAdmin
+      .from('whatsapp_messages')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', todayISO),
+
+    supabaseAdmin
+      .from('customers')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', todayISO)
+  ]);
 
   const totalRevenue = revenueData?.reduce((sum: number, b: any) => sum + (Number(b.total_amount) || 0), 0) || 0;
 
-  // 3. Get pending actions (pending bookings)
-  const { count: pendingBookings } = await supabaseAdmin
-    .from('bookings')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'pending');
-
-  // 4. Get active pilots
-  const { count: activePilots } = await supabaseAdmin
-    .from('pilots')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'active');
+  // Generate a human-readable summary for the agent
+  const summary = `System Status Summary (${new Date().toLocaleDateString()}):
+- Today's Bookings: ${todayBookings || 0}
+- Revenue Generated Today: €${totalRevenue.toFixed(2)}
+- Pending Inquiries: ${pendingBookings || 0}
+- Active Pilots on Duty: ${activePilots || 0}
+- New Customer Messages: ${((telegramMsgsToday || 0) + (whatsappMsgsToday || 0))} (${telegramMsgsToday || 0} Telegram, ${whatsappMsgsToday || 0} WhatsApp)
+- New Customer Registrations: ${newCustomersToday || 0}
+Action Items: ${pendingBookings && pendingBookings > 0 ? `There are ${pendingBookings} pending bookings requiring attention.` : 'No critical pending bookings.'}`;
 
   return {
     timestamp: new Date().toISOString(),
@@ -52,8 +84,11 @@ export async function getSystemStatus() {
       today_bookings: todayBookings || 0,
       today_revenue: totalRevenue,
       total_pending_bookings: pendingBookings || 0,
-      active_pilots: activePilots || 0
+      active_pilots: activePilots || 0,
+      today_messages: (telegramMsgsToday || 0) + (whatsappMsgsToday || 0),
+      today_new_customers: newCustomersToday || 0
     },
+    summary,
     system_health: {
       database: !bookingsError ? 'healthy' : 'error',
       api: 'healthy'
