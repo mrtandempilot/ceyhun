@@ -4,6 +4,7 @@ import BlogPagination from '@/components/BlogPagination';
 import Link from 'next/link';
 import { PostWithRelations, PostCategory, PostTag } from '@/types/blog';
 import Image from 'next/image';
+import { Suspense } from 'react';
 
 import { generateBlogStructuredData } from '@/lib/seo';
 
@@ -213,11 +214,13 @@ export default async function BlogPage({
                                 </div>
 
                                 {/* Pagination */}
-                                <BlogPagination
-                                    currentPage={pagination.page}
-                                    totalPages={pagination.totalPages}
-                                    basePath="/blog"
-                                />
+                                <Suspense fallback={<div className="text-center py-4">Loading pages...</div>}>
+                                    <BlogPagination
+                                        currentPage={pagination.page}
+                                        totalPages={pagination.totalPages}
+                                        basePath="/blog"
+                                    />
+                                </Suspense>
                             </>
                         ) : (
                             <div className="text-center py-12">
