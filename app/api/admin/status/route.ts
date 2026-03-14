@@ -11,7 +11,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const status = await getSystemStatus();
+    const { searchParams } = new URL(request.url);
+    const detailed = searchParams.get('detailed') === 'true';
+
+    const status = await getSystemStatus(detailed);
     
     return NextResponse.json({
       success: true,
