@@ -1,14 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder';
 
 // Admin client bypasses RLS - use only in API routes
-export const supabaseAdmin = (supabaseUrl && supabaseUrl.startsWith('http'))
-  ? createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-  : null as any; // Fallback for build time
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
