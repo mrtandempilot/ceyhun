@@ -5,14 +5,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth';
 import { setCredential, getCredential, getAllCredentials, deleteCredential } from '@/lib/credentials';
 import { maskCredential } from '@/lib/encryption';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+export const dynamic = 'force-dynamic';
 
 // Admin check helper
 async function isAdmin(request: NextRequest): Promise<{ isAdmin: boolean; userId?: string; error?: string }> {
