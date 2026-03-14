@@ -556,7 +556,7 @@ export async function getIncomingEmails() {
     const { count } = await supabase
       .from('incoming_emails')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'unread');
+      .eq('is_read', false);
 
     return count || 0;
   } catch (error) {

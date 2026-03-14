@@ -80,12 +80,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     });
 
-    // Request notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then((permission) => {
-        console.log('🔔 Notification permission:', permission);
-      });
-    }
+    // Notifications must be requested via user interaction, not on load
 
     // Listen for test events (always available)
     const handleTestEvent = (event: any) => {
