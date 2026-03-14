@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSystemStatus } from '@/lib/admin';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
-    // Basic API Key security
     const authHeader = request.headers.get('Authorization');
     const adminKey = process.env.ADMIN_API_KEY;
 
@@ -11,20 +12,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const detailed = searchParams.get('detailed') !== 'false'; // Default to true unless explicitly disabled
-
-    const status = await getSystemStatus(detailed);
+    const status = await getSystemStatus(true);
     
     return NextResponse.json({
       success: true,
-      ...status
+      data: status.detailed?.financials || {}
     });
   } catch (error) {
-    console.error('Error in Admin Status API:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch system status' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

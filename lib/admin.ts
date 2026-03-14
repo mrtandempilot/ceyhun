@@ -42,7 +42,9 @@ export async function getSystemStatus(detailed: boolean = false) {
     supabaseAdmin.from('pilots').select('first_name, last_name, status, license_expiry'), // results[9]
     supabaseAdmin.from('customers').select('*', { count: 'exact', head: true }), // results[10]
     supabaseAdmin.from('bookings').select('tour_name, booking_date, status').gte('booking_date', todayISO).lt('booking_date', nextWeekISO).limit(10), // results[11]
-    supabaseAdmin.from('invoices').select('status, total_amount') // results[12]
+    supabaseAdmin.from('invoices').select('status, total_amount'), // results[12]
+    supabaseAdmin.from('bookings').select('total_amount').eq('status', 'confirmed'), // results[13] - All-time revenue
+    supabaseAdmin.from('expenses').select('amount') // results[14] - All-time expenses
   ] : [];
 
   const results = await Promise.all([...baseQueries, ...detailedQueries]);
@@ -67,6 +69,8 @@ export async function getSystemStatus(detailed: boolean = false) {
     const totalCustomers = results[10].count || 0;
     const upcomingOps = results[11].data || [];
     const invoices = results[12].data || [];
+    const allTimeRevData = results[13].data || [];
+    const allTimeExpData = results[14].data || [];
 
     const monthRevenue = monthBookings.filter((b: any) => b.status === 'confirmed').reduce((sum: number, b: any) => sum + (Number(b.total_amount) || 0), 0);
     const monthExpenseTotal = monthExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
@@ -82,12 +86,19 @@ export async function getSystemStatus(detailed: boolean = false) {
     const overdueInvoices = invoices.filter((i: any) => i.status === 'overdue');
     const totalUnpaidAmount = unpaidInvoices.reduce((sum: number, i: any) => sum + (Number(i.total_amount) || 0), 0);
 
+    // All-time context
+    const allTimeRevenue = allTimeRevData.reduce((sum: number, r: any) => sum + (Number(r.total_amount) || 0), 0);
+    const allTimeExpenses = allTimeExpData.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+
     detailedData = {
       financials: {
         month_to_date_revenue: monthRevenue,
         month_to_date_expenses: monthExpenseTotal,
         net_profit: monthRevenue - monthExpenseTotal,
         expense_breakdown: expenseBreakdown,
+        all_time_revenue: allTimeRevenue,
+        all_time_expenses: allTimeExpenses,
+        all_time_net_profit: allTimeRevenue - allTimeExpenses,
         invoices: {
           unpaid_count: unpaidInvoices.length,
           overdue_count: overdueInvoices.length,
@@ -115,6 +126,7 @@ export async function getSystemStatus(detailed: boolean = false) {
 ${detailed ? `
 [MASTER VIEW - ACCOUNTING & FINANCE]
 - MTD Profit: €${detailedData.financials.net_profit.toFixed(2)} (Rev: €${detailedData.financials.month_to_date_revenue.toFixed(2)} / Exp: €${detailedData.financials.month_to_date_expenses.toFixed(2)})
+- All-Time Health: Net Profit €${detailedData.financials.all_time_net_profit.toFixed(2)} (Rev: €${detailedData.financials.all_time_revenue.toFixed(2)} / Exp: €${detailedData.financials.all_time_expenses.toFixed(2)})
 - Receivables: ${detailedData.financials.invoices.unpaid_count} unpaid invoices totaling €${detailedData.financials.invoices.total_unpaid_amount.toFixed(2)}. ${detailedData.financials.invoices.overdue_count} are OVERDUE.
 - HR: ${detailedData.hr.total_pilots} pilots managed. Check for license expiries.
 - CRM: ${detailedData.crm.total_customers} total customers in database.` : ''}
