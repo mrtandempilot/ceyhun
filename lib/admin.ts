@@ -32,20 +32,20 @@ export async function getSystemStatus(detailed: boolean = false) {
     supabaseAdmin.from('pilots').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     supabaseAdmin.from('telegram_messages').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
     supabaseAdmin.from('whatsapp_messages').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
-    supabaseAdmin.from('customers').select('*', { count: 'exact', head: true }).gte('created_at', todayISO)
+    supabaseAdmin.from('customers').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
+    supabaseAdmin.from('bookings').select('*', { count: 'exact', head: true }) // results[7]: All-time total bookings
   ];
 
   // Extended queries for detailed mode
   const detailedQueries = detailed ? [
-    supabaseAdmin.from('bookings').select('total_amount, status').gte('created_at', monthStartISO), // results[7]
-    supabaseAdmin.from('expenses').select('amount, category').gte('expense_date', monthStartISO), // results[8]
-    supabaseAdmin.from('pilots').select('first_name, last_name, status, license_expiry'), // results[9]
-    supabaseAdmin.from('customers').select('*', { count: 'exact', head: true }), // results[10]
-    supabaseAdmin.from('bookings').select('tour_name, booking_date, status').gte('booking_date', todayISO).lt('booking_date', nextWeekISO).limit(10), // results[11]
-    supabaseAdmin.from('invoices').select('status, total_amount'), // results[12]
-    supabaseAdmin.from('bookings').select('total_amount').eq('status', 'confirmed'), // results[13] - All-time revenue
-    supabaseAdmin.from('expenses').select('amount'), // results[14] - All-time expenses
-    supabaseAdmin.from('bookings').select('*', { count: 'exact', head: true }) // results[15] - All-time total bookings count
+    supabaseAdmin.from('bookings').select('total_amount, status').gte('created_at', monthStartISO), // results[8]
+    supabaseAdmin.from('expenses').select('amount, category').gte('expense_date', monthStartISO), // results[9]
+    supabaseAdmin.from('pilots').select('first_name, last_name, status, license_expiry'), // results[10]
+    supabaseAdmin.from('customers').select('*', { count: 'exact', head: true }), // results[11]
+    supabaseAdmin.from('bookings').select('tour_name, booking_date, status').gte('booking_date', todayISO).lt('booking_date', nextWeekISO).limit(10), // results[12]
+    supabaseAdmin.from('invoices').select('status, total_amount'), // results[13]
+    supabaseAdmin.from('bookings').select('total_amount').eq('status', 'confirmed'), // results[14] - All-time revenue
+    supabaseAdmin.from('expenses').select('amount') // results[15] - All-time expenses
   ] : [];
 
   const results = await Promise.all([...baseQueries, ...detailedQueries]);
@@ -57,22 +57,22 @@ export async function getSystemStatus(detailed: boolean = false) {
     { count: activePilots },
     { count: telegramMsgsToday },
     { count: whatsappMsgsToday },
-    { count: newCustomersToday }
+    { count: newCustomersToday },
+    { count: allTimeBookingsCount }
   ] = results;
 
   const totalRevenueToday = revenueData?.reduce((sum: number, b: any) => sum + (Number(b.total_amount) || 0), 0) || 0;
 
   let detailedData: any = {};
   if (detailed) {
-    const monthBookings = results[7].data || [];
-    const monthExpenses = results[8].data || [];
-    const pilotList = results[9].data || [];
-    const totalCustomers = results[10].count || 0;
-    const upcomingOps = results[11].data || [];
-    const invoices = results[12].data || [];
-    const allTimeRevData = results[13].data || [];
-    const allTimeExpData = results[14].data || [];
-    const allTimeBookingsCount = results[15].count || 0;
+    const monthBookings = results[8].data || [];
+    const monthExpenses = results[9].data || [];
+    const pilotList = results[10].data || [];
+    const totalCustomers = results[11].count || 0;
+    const upcomingOps = results[12].data || [];
+    const invoices = results[13].data || [];
+    const allTimeRevData = results[14].data || [];
+    const allTimeExpData = results[15].data || [];
 
     const monthRevenue = monthBookings.filter((b: any) => b.status === 'confirmed').reduce((sum: number, b: any) => sum + (Number(b.total_amount) || 0), 0);
     const monthExpenseTotal = monthExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
@@ -122,22 +122,24 @@ export async function getSystemStatus(detailed: boolean = false) {
     };
   }
 
-  const summary = `System Intelligence Report (${now.toLocaleDateString()}):
-- Today: ${todayBookings} bookings, €${totalRevenueToday.toFixed(2)} revenue.
-- Operations: ${pendingBookings} pending actions. ${activePilots} pilots active.
-- Communication: ${((telegramMsgsToday || 0) + (whatsappMsgsToday || 0))} new messages today.
+  const summary = `System MASTER Intelligence Report (${now.toLocaleDateString()}):
+- CRITICAL: Total volume of ${allTimeBookingsCount} bookings exists in system history.
+- Today: ${todayBookings} new bookings, €${totalRevenueToday.toFixed(2)} revenue.
+- Operations: ${pendingBookings} pending actions (current bottleneck). ${activePilots} active pilots.
+- Communication: ${((telegramMsgsToday || 0) + (whatsappMsgsToday || 0))} message pings today.
 ${detailed ? `
-[MASTER VIEW - ANALYTICS & HISTORY]
-- Historical: ${detailedData.operations.all_time_bookings} total bookings since launch.
-- Financials: Net Profit €${detailedData.financials.all_time_net_profit.toFixed(2)} (Rev: €${detailedData.financials.all_time_revenue.toFixed(2)} / Exp: €${detailedData.financials.all_time_expenses.toFixed(2)})
-- Receivables: ${detailedData.financials.invoices.unpaid_count} unpaid / ${detailedData.financials.invoices.overdue_count} overdue invoices.
-- CRM: ${detailedData.crm.total_customers} total customers managed.` : ''}
-Action Required: ${pendingBookings && pendingBookings > 0 ? `Urgent: ${pendingBookings} pending bookings need attention.` : 'System stable. No urgent pending items.'}`;
+[MASTER VIEW - HISTORY & ANALYTICS]
+- Lifetime Revenue: €${detailedData.financials.all_time_revenue.toFixed(2)}
+- Lifetime Net Profit: €${detailedData.financials.all_time_net_profit.toFixed(2)}
+- CRM Health: ${detailedData.crm.total_customers} customers managed.
+- Financial Warnings: ${detailedData.financials.invoices.overdue_count} OVERDUE invoices.` : ''}
+Immediate Action: You have ${pendingBookings} pending bookings. Focus on converting these to confirmed status.`;
 
   return {
     success: true,
     timestamp: now.toISOString(),
     stats: {
+      all_time_bookings: allTimeBookingsCount || 0,
       today_bookings: todayBookings || 0,
       today_revenue: totalRevenueToday,
       total_pending_bookings: pendingBookings || 0,
