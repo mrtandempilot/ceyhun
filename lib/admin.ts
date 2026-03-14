@@ -45,7 +45,10 @@ export async function getSystemStatus(detailed: boolean = false) {
     supabaseAdmin.from('bookings').select('tour_name, booking_date, status, customer_name, customer_email, customer_phone').gte('booking_date', todayISO).lt('booking_date', nextWeekISO).limit(10), // results[12]
     supabaseAdmin.from('invoices').select('status, total_amount'), // results[13]
     supabaseAdmin.from('bookings').select('total_amount').eq('status', 'confirmed'), // results[14] - All-time revenue
-    supabaseAdmin.from('expenses').select('amount') // results[15] - All-time expenses
+    supabaseAdmin.from('expenses').select('amount'), // results[15] - All-time expenses
+    supabaseAdmin.from('reviews').select('rating'), // results[16]
+    supabaseAdmin.from('tour_packages').select('name, status'), // results[17]
+    supabaseAdmin.from('contact_submissions').select('*', { count: 'exact', head: true }).eq('status', 'new') // results[18]
   ] : [];
 
   const results = await Promise.all([...baseQueries, ...detailedQueries]);
@@ -74,6 +77,9 @@ export async function getSystemStatus(detailed: boolean = false) {
     const invoices = results[13].data || [];
     const allTimeRevData = results[14].data || [];
     const allTimeExpData = results[15].data || [];
+    const reviewData = results[16].data || [];
+    const tourPackages = results[17].data || [];
+    const newLeadsCount = results[18].count || 0;
 
     const monthRevenue = monthBookings.filter((b: any) => b.status === 'confirmed').reduce((sum: number, b: any) => sum + (Number(b.total_amount) || 0), 0);
     const monthExpenseTotal = monthExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
@@ -92,6 +98,10 @@ export async function getSystemStatus(detailed: boolean = false) {
     // All-time context
     const allTimeRevenue = allTimeRevData.reduce((sum: number, r: any) => sum + (Number(r.total_amount) || 0), 0);
     const allTimeExpenses = allTimeExpData.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+
+    const avgRating = reviewData.length > 0 
+      ? reviewData.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / reviewData.length 
+      : 5.0;
 
     detailedData = {
       financials: {
@@ -113,10 +123,13 @@ export async function getSystemStatus(detailed: boolean = false) {
         pilots: pilotList.map((p: any) => ({ name: `${p.first_name} ${p.last_name}`, status: p.status, license_warning: new Date(p.license_expiry) < nextWeek })),
       },
       crm: {
-        total_customers: totalCustomers
+        total_customers: totalCustomers,
+        customer_satisfaction: avgRating.toFixed(1),
+        new_contact_leads: newLeadsCount
       },
       operations: {
         all_time_bookings: allTimeBookingsCount,
+        active_tour_packages: tourPackages.filter((t: any) => t.status === 'active').length,
         upcoming_bookings_count: upcomingOps.length,
         next_week_preview: upcomingOps
       }
@@ -128,19 +141,19 @@ export async function getSystemStatus(detailed: boolean = false) {
     : '- No upcoming tours in the next 7 days.';
 
   const summary = `System MASTER Intelligence Report (${now.toLocaleDateString()}):
+- LIVE DATABASE: Directly connected to Supabase with Master (Service Role) permissions.
 - CRITICAL: Total volume of ${allTimeBookingsCount} bookings exists in system history.
 - Today: ${todayBookings} new bookings, €${totalRevenueToday.toFixed(2)} revenue.
 - Upcoming Tours (Next 7 Days):
 ${upcomingToursSummary}
 - Operations: ${pendingBookings} pending actions (current bottleneck). ${activePilots} active pilots.
-- Communication: ${((telegramMsgsToday || 0) + (whatsappMsgsToday || 0))} message pings today.
+- Communication: ${((telegramMsgsToday || 0) + (whatsappMsgsToday || 0))} message pings today. ${detailed ? (detailedData?.crm?.new_contact_leads || 0) : '0'} UNREAD leads.
 ${detailed ? `
-[MASTER VIEW - HISTORY & ANALYTICS]
-- Lifetime Revenue: €${detailedData.financials.all_time_revenue.toFixed(2)}
-- Lifetime Net Profit: €${detailedData.financials.all_time_net_profit.toFixed(2)}
-- CRM Health: ${detailedData.crm.total_customers} customers managed.
-- Financial Warnings: ${detailedData.financials.invoices.overdue_count} OVERDUE invoices.` : ''}
-Immediate Action: You have ${pendingBookings} pending bookings. Focus on converting these to confirmed status.`;
+[MASTER VIEW - FULL SYSTEM MAP]
+- CRM: Customer Sat: ${detailedData.crm.customer_satisfaction}/5.0 | Total Customers: ${detailedData.crm.total_customers}.
+- INVENTORY: ${detailedData.operations.active_tour_packages} active tour packages available.
+- FINANCIAL: Lifetime Profit €${detailedData.financials.all_time_net_profit.toFixed(2)} | Overdue: ${detailedData.financials.invoices.overdue_count}.` : ''}
+Immediate Action: You have ${pendingBookings} pending bookings and ${detailed ? (detailedData?.crm?.new_contact_leads || 0) : 'some'} new leads. Focus on conversion.`;
 
   return {
     success: true,
