@@ -37,11 +37,12 @@ export async function getSystemStatus(detailed: boolean = false) {
 
   // Extended queries for detailed mode
   const detailedQueries = detailed ? [
-    supabaseAdmin.from('bookings').select('total_amount, status').gte('created_at', monthStartISO), // Monthly revenue
-    supabaseAdmin.from('expenses').select('amount').gte('expense_date', monthStartISO), // Monthly expenses
-    supabaseAdmin.from('pilots').select('first_name, last_name, status, license_expiry'), // HR
-    supabaseAdmin.from('customers').select('*', { count: 'exact', head: true }), // Total CRM
-    supabaseAdmin.from('bookings').select('tour_name, booking_date, status').gte('booking_date', todayISO).lt('booking_date', nextWeekISO).limit(10) // Ops
+    supabaseAdmin.from('bookings').select('total_amount, status').gte('created_at', monthStartISO), // results[7]
+    supabaseAdmin.from('expenses').select('amount, category').gte('expense_date', monthStartISO), // results[8]
+    supabaseAdmin.from('pilots').select('first_name, last_name, status, license_expiry'), // results[9]
+    supabaseAdmin.from('customers').select('*', { count: 'exact', head: true }), // results[10]
+    supabaseAdmin.from('bookings').select('tour_name, booking_date, status').gte('booking_date', todayISO).lt('booking_date', nextWeekISO).limit(10), // results[11]
+    supabaseAdmin.from('invoices').select('status, total_amount') // results[12]
   ] : [];
 
   const results = await Promise.all([...baseQueries, ...detailedQueries]);
@@ -65,15 +66,33 @@ export async function getSystemStatus(detailed: boolean = false) {
     const pilotList = results[9].data || [];
     const totalCustomers = results[10].count || 0;
     const upcomingOps = results[11].data || [];
+    const invoices = results[12].data || [];
 
     const monthRevenue = monthBookings.filter((b: any) => b.status === 'confirmed').reduce((sum: number, b: any) => sum + (Number(b.total_amount) || 0), 0);
     const monthExpenseTotal = monthExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+    
+    // Group expenses by category
+    const expenseBreakdown = monthExpenses.reduce((acc: any, e: any) => {
+      acc[e.category] = (acc[e.category] || 0) + (Number(e.amount) || 0);
+      return acc;
+    }, {});
+
+    // Invoice analytics
+    const unpaidInvoices = invoices.filter((i: any) => i.status === 'sent' || i.status === 'overdue');
+    const overdueInvoices = invoices.filter((i: any) => i.status === 'overdue');
+    const totalUnpaidAmount = unpaidInvoices.reduce((sum: number, i: any) => sum + (Number(i.total_amount) || 0), 0);
 
     detailedData = {
       financials: {
         month_to_date_revenue: monthRevenue,
         month_to_date_expenses: monthExpenseTotal,
-        net_profit: monthRevenue - monthExpenseTotal
+        net_profit: monthRevenue - monthExpenseTotal,
+        expense_breakdown: expenseBreakdown,
+        invoices: {
+          unpaid_count: unpaidInvoices.length,
+          overdue_count: overdueInvoices.length,
+          total_unpaid_amount: totalUnpaidAmount
+        }
       },
       hr: {
         total_pilots: pilotList.length,
@@ -94,11 +113,11 @@ export async function getSystemStatus(detailed: boolean = false) {
 - Operations: ${pendingBookings} pending actions. ${activePilots} pilots active.
 - Communication: ${((telegramMsgsToday || 0) + (whatsappMsgsToday || 0))} new messages today.
 ${detailed ? `
-[MASTER VIEW - DETAILED]
-- Financials (MTD): Revenue €${detailedData.financials.month_to_date_revenue.toFixed(2)}, Expenses €${detailedData.financials.month_to_date_expenses.toFixed(2)}, Profit €${detailedData.financials.net_profit.toFixed(2)}.
+[MASTER VIEW - ACCOUNTING & FINANCE]
+- MTD Profit: €${detailedData.financials.net_profit.toFixed(2)} (Rev: €${detailedData.financials.month_to_date_revenue.toFixed(2)} / Exp: €${detailedData.financials.month_to_date_expenses.toFixed(2)})
+- Receivables: ${detailedData.financials.invoices.unpaid_count} unpaid invoices totaling €${detailedData.financials.invoices.total_unpaid_amount.toFixed(2)}. ${detailedData.financials.invoices.overdue_count} are OVERDUE.
 - HR: ${detailedData.hr.total_pilots} pilots managed. Check for license expiries.
-- CRM: ${detailedData.crm.total_customers} total customers in database.
-- Future Load: ${detailedData.operations.upcoming_bookings_count} bookings scheduled for next 7 days.` : ''}
+- CRM: ${detailedData.crm.total_customers} total customers in database.` : ''}
 Action Required: ${pendingBookings && pendingBookings > 0 ? `Urgent: ${pendingBookings} pending bookings need attention.` : 'System stable. No urgent pending items.'}`;
 
   return {
