@@ -42,7 +42,7 @@ export async function getSystemStatus(detailed: boolean = false) {
     supabaseAdmin.from('expenses').select('amount, category').gte('expense_date', monthStartISO), // results[9]
     supabaseAdmin.from('pilots').select('first_name, last_name, status, license_expiry'), // results[10]
     supabaseAdmin.from('customers').select('*', { count: 'exact', head: true }), // results[11]
-    supabaseAdmin.from('bookings').select('tour_name, booking_date, status').gte('booking_date', todayISO).lt('booking_date', nextWeekISO).limit(10), // results[12]
+    supabaseAdmin.from('bookings').select('tour_name, booking_date, status, customer_name, customer_email, customer_phone').gte('booking_date', todayISO).lt('booking_date', nextWeekISO).limit(10), // results[12]
     supabaseAdmin.from('invoices').select('status, total_amount'), // results[13]
     supabaseAdmin.from('bookings').select('total_amount').eq('status', 'confirmed'), // results[14] - All-time revenue
     supabaseAdmin.from('expenses').select('amount') // results[15] - All-time expenses
