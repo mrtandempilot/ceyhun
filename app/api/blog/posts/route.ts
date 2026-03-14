@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { Post, PostWithRelations, BlogPostsResponse } from '@/types/blog';
+import { supabase } from '@/lib/supabase';
+import { PostWithRelations, BlogPostsResponse } from '@/types/blog';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
@@ -55,7 +52,7 @@ export async function GET(request: NextRequest) {
                     .eq('category_id', cat.id);
 
                 if (postIds && postIds.length > 0) {
-                    query = query.in('id', postIds.map(p => p.post_id));
+                    query = query.in('id', postIds.map((p: any) => p.post_id));
                 } else {
                     // No posts in this category
                     return NextResponse.json({
@@ -89,7 +86,7 @@ export async function GET(request: NextRequest) {
                     .eq('tag_id', t.id);
 
                 if (postIds && postIds.length > 0) {
-                    query = query.in('id', postIds.map(p => p.post_id));
+                    query = query.in('id', postIds.map((p: any) => p.post_id));
                 } else {
                     // No posts with this tag
                     return NextResponse.json({
