@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
@@ -54,7 +51,7 @@ export async function GET(request: NextRequest) {
         const activities: any[] = [];
 
         // Add bookings
-        recentBookings.data?.forEach(booking => {
+        recentBookings.data?.forEach((booking: any) => {
             activities.push({
                 id: `booking-${booking.id}`,
                 type: 'booking',
@@ -68,7 +65,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Add Telegram messages
-        recentTelegramMsgs.data?.forEach(msg => {
+        recentTelegramMsgs.data?.forEach((msg: any) => {
             activities.push({
                 id: `telegram-${msg.id}`,
                 type: 'telegram',
@@ -82,7 +79,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Add WhatsApp messages
-        recentWhatsappMsgs.data?.forEach(msg => {
+        recentWhatsappMsgs.data?.forEach((msg: any) => {
             activities.push({
                 id: `whatsapp-${msg.id}`,
                 type: 'whatsapp',
@@ -96,7 +93,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Add blog posts
-        recentBlogPosts.data?.forEach(post => {
+        recentBlogPosts.data?.forEach((post: any) => {
             activities.push({
                 id: `blog-${post.id}`,
                 type: 'blog',
@@ -110,7 +107,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Add chat messages
-        recentChatMsgs.data?.forEach(msg => {
+        recentChatMsgs.data?.forEach((msg: any) => {
             activities.push({
                 id: `chat-${msg.id}`,
                 type: 'chat',

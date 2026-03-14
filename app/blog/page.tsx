@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { PostWithRelations, PostCategory, PostTag } from '@/types/blog';
 import Image from 'next/image';
 import { Suspense } from 'react';
-
+import { supabase } from '@/lib/supabase';
 import { generateBlogStructuredData } from '@/lib/seo';
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.oludeniz.tours'; // Fallback to production domain
@@ -75,17 +75,12 @@ async function getBlogPosts(page: number = 1) {
 
 async function getCategories() {
     try {
-        const { createClient } = require('@supabase/supabase-js');
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-
         const { data, error } = await supabase
             .from('post_categories')
             .select('*')
             .order('post_count', { ascending: false })
             .limit(10);
+
 
         if (error) throw error;
         return data || [];

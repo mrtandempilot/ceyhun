@@ -4,6 +4,7 @@ import BlogPagination from '@/components/BlogPagination';
 import Link from 'next/link';
 import { PostWithRelations } from '@/types/blog';
 import { notFound } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 interface PageProps {
     params: { slug: string };
@@ -31,17 +32,12 @@ async function getCategoryPosts(categorySlug: string, page: number = 1) {
 
 async function getCategory(slug: string) {
     try {
-        const { createClient } = require('@supabase/supabase-js');
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-
         const { data, error } = await supabase
             .from('post_categories')
             .select('*')
             .eq('slug', slug)
             .single();
+
 
         if (error) return null;
         return data;
