@@ -64,12 +64,13 @@ export async function getSystemStatus(detailed: boolean = false) {
   const totalRevenueToday = revenueData?.reduce((sum: number, b: any) => sum + (Number(b.total_amount) || 0), 0) || 0;
 
   let detailedData: any = {};
+  const upcomingOps = detailed ? (results[12].data || []) : [];
+
   if (detailed) {
     const monthBookings = results[8].data || [];
     const monthExpenses = results[9].data || [];
     const pilotList = results[10].data || [];
     const totalCustomers = results[11].count || 0;
-    const upcomingOps = results[12].data || [];
     const invoices = results[13].data || [];
     const allTimeRevData = results[14].data || [];
     const allTimeExpData = results[15].data || [];
@@ -122,9 +123,15 @@ export async function getSystemStatus(detailed: boolean = false) {
     };
   }
 
+  const upcomingToursSummary = upcomingOps.length > 0 
+    ? upcomingOps.map((b: any) => `- ${b.booking_date.split('T')[0]}: ${b.tour_name} (${b.customer_name || 'Guest'})`).join('\n')
+    : '- No upcoming tours in the next 7 days.';
+
   const summary = `System MASTER Intelligence Report (${now.toLocaleDateString()}):
 - CRITICAL: Total volume of ${allTimeBookingsCount} bookings exists in system history.
 - Today: ${todayBookings} new bookings, €${totalRevenueToday.toFixed(2)} revenue.
+- Upcoming Tours (Next 7 Days):
+${upcomingToursSummary}
 - Operations: ${pendingBookings} pending actions (current bottleneck). ${activePilots} active pilots.
 - Communication: ${((telegramMsgsToday || 0) + (whatsappMsgsToday || 0))} message pings today.
 ${detailed ? `

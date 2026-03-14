@@ -21,6 +21,8 @@ OpenClaw has full administrative authority to query the following live data poin
 | `/api/admin/bookings/total` | **Historical Volume** | Total number of bookings ever made (Current: 32). |
 | `/api/admin/statistics/historical` | **System Growth** | Lifetime analytics across CRM, Finance, and Operations. |
 | `/api/admin/bookings/tomorrow` | **Operational Details** | Tomorrow's bookings with full CRM/Customer contact details. |
+| `/api/admin/bookings/customer-details` | **CRM Intelligence** | High-verbosity booking details including customer names. |
+| `/api/admin/reservations/full-details` | **Master Oversight** | Complete, non-filtered reservation and analytics data. |
 
 ## 🧠 Data Characteristics
 
