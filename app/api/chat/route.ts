@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPilotAvailability } from '@/lib/bookings';
 
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL as string;
-
-if (!N8N_WEBHOOK_URL) {
-  throw new Error('N8N_WEBHOOK_URL environment variable is not set');
-}
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL as string;
+    
+    if (!N8N_WEBHOOK_URL) {
+      console.warn('N8N_WEBHOOK_URL environment variable is not set');
+      // We don't throw an error here to allow DB saving even if webhook fails,
+      // but we should probably inform the user or handle it.
+    }
+
     const body = await request.json();
     const { message, sessionId, visitorInfo, customerEmail, customerName } = body;
 
@@ -45,23 +49,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Send message to n8n webhook
-    const response = await fetch(N8N_WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chatInput: message,
-        sessionId: currentSessionId,
-      }),
-    });
+    let botResponse = 'Thank you for your message. How can I assist you further?';
+    
+    if (N8N_WEBHOOK_URL) {
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chatInput: message,
+          sessionId: currentSessionId,
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to communicate with chatbot service');
+      if (!response.ok) {
+        console.error('Failed to communicate with chatbot service');
+      } else {
+        const data = await response.json();
+        botResponse = data.output || data.response || data.message || botResponse;
+      }
     }
-
-    const data = await response.json();
-    const botResponse = data.output || data.response || data.message || 'Thank you for your message. How can I assist you further?';
 
     // Save bot response to database
     try {
